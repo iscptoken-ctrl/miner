@@ -2,777 +2,499 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BnbP2P</title>
-<meta name="description" content="Peer-to-peer fixed-price orders on BNB Chain. 0.05% per side, no slippage, no admin.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="CD1 Sat Miner demo: build a mining facility, upgrade GPUs and earn Sat from a shared reward pool.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>CD1 Sat Miner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
+/* Layout: one phone-width column; production on top, capacity meters, rigs, upgrades, pool, wallet. Deliberately dark single look (mining room at night, BTC orange light). */
 :root{
-  --bg:#0b0d12;--panel:#141821;--panel2:#1b2030;--line:#262c3d;
-  --text:#e8ebf2;--muted:#8a93a8;--accent:#7c5cff;--accent2:#00d4a8;
-  --good:#22c58b;--bad:#ff5c6c;--warn:#ffb547;--r:14px;
+  --bg:#10151d; --panel:#171e29; --panel-2:#1e2735; --line:#2a3546;
+  --fg:#e7ecf3; --muted:#8b98ab; --accent:#f39a2b; --accent-soft:rgba(243,154,43,.14);
+  --good:#4fc28b; --warn:#f3c14b; --bad:#ef6a5b; --cool:#5ab4e8;
+  --usdt:#3fbf9f; --bnb:#f0c03c; --cd1:#a98bf0;
+  --f-display:"Chakra Petch","Rajdhani","Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);
-  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--accent2)}
-button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;
-  background:var(--accent);color:#fff;font-weight:600}
-button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
-button.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
-button:disabled{opacity:.45;cursor:not-allowed}
-input,select{font:inherit;width:100%;padding:11px 12px;border-radius:10px;
-  border:1px solid var(--line);background:var(--bg);color:var(--text)}
-header{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--line)}
-.wrap{max-width:980px;margin:0 auto;padding:0 16px}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
-.logo{font-weight:800;font-size:18px;letter-spacing:.2px}
-.logo span{color:var(--accent2)}
-.pls{color:var(--muted);font-size:13px}
-nav{display:flex;gap:6px;padding:10px 0;overflow-x:auto}
-nav button{background:transparent;color:var(--muted);border:1px solid var(--line);white-space:nowrap}
-nav button.on{background:var(--panel2);color:var(--text);border-color:var(--accent)}
-main{padding:16px 0 60px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.banner{border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:14px}
-.banner.warn{background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.4);color:var(--warn)}
-.banner.info{background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.35)}
-.row{display:flex;gap:10px;align-items:center}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.muted{color:var(--muted)}
-.small{font-size:13px}
-.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;
-  background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
-.tag.comm{color:var(--warn);border-color:rgba(255,181,71,.5)}
-.tag.thin{color:var(--warn);border-color:rgba(255,181,71,.5)}
-.good{color:var(--good)}.bad{color:var(--bad)}.warnc{color:var(--warn)}
-.tok{display:inline-flex;align-items:center;gap:7px;font-weight:600}
-.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;
-  background:var(--panel2);border:1px solid var(--line)}
-.order{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
-.order:first-child{border-top:0}
-.order .main{flex:1;min-width:0}
-.order .line1{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.order .line1 b{font-weight:700}
-.order .line1 .for{color:var(--muted);margin:0 4px}
-.order .line2{font-size:12px;color:var(--muted);margin-top:2px}
-.order button{padding:7px 14px;font-size:14px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:9px 6px;border-top:1px solid var(--line)}
-th{color:var(--muted);font-weight:600;border-top:0}
-td.r,th.r{text-align:right}
-.preview{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px}
-.preview div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
-label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
-.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--panel2);
-  border:1px solid var(--line);padding:12px 16px;border-radius:12px;max-width:92vw;z-index:20;display:none}
-.hidden{display:none!important}
-h2{font-size:17px;margin:0 0 10px}
-h3{font-size:15px;margin:16px 0 6px}
-ul{padding-left:18px;margin:6px 0}
-@media (max-width:560px){.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 96px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.brand b{color:var(--accent)}
+.pill{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;padding:3px 7px;border-radius:4px;border:1px solid var(--accent);color:var(--accent)}
+.speed{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.speed button{background:none;border:0;color:var(--muted);font:500 12px var(--f-mono);padding:6px 9px;cursor:pointer}
+.speed button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hero{background:linear-gradient(180deg,var(--panel-2),var(--panel));border-color:#3a3226}
+.acc-label{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.acc{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,9vw,42px);line-height:1.1;color:var(--accent);word-break:break-all}
+.acc small{font-size:.45em;color:var(--muted);margin-left:6px;letter-spacing:.08em}
+.sub{color:var(--muted);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:var(--f-mono);font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.stat .s{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.btn{font:600 14px var(--f-body);border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);padding:9px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:focus-visible,.speed button:focus-visible,.gpu:focus-visible,.slot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1206}
+.btn.full{width:100%;margin-top:12px}
+.btn.dim{opacity:.55}
+.cost{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.c-USDT{color:var(--usdt);background:rgba(63,191,159,.12)}
+.c-BNB{color:var(--bnb);background:rgba(240,192,60,.12)}
+.c-CD1{color:var(--cd1);background:rgba(169,139,240,.14)}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter .top{display:flex;justify-content:space-between;font-size:12px;gap:6px}
+.meter .top span:first-child{color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.bar{height:8px;border-radius:4px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--good);transition:width .3s}
+.bar i.warn{background:var(--warn)} .bar i.bad{background:var(--bad)}
+.hint{margin-top:10px;font-size:13px;color:var(--fg);background:var(--accent-soft);border-radius:6px;padding:8px 10px}
+.hint b{color:var(--accent)}
+.rig{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.rigs{display:flex;flex-direction:column;gap:10px}
+.rig-head{display:flex;justify-content:space-between;gap:8px;font-size:13px;flex-wrap:wrap}
+.rig-head b{font-family:var(--f-display);font-size:15px;letter-spacing:.04em}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gpu,.slot{border-radius:6px;padding:8px 4px;text-align:center;cursor:pointer;font-family:var(--f-mono);font-size:12px;min-width:0}
+.gpu{background:var(--panel-2);border:1px solid var(--line);color:var(--fg)}
+.gpu .l{font-family:var(--f-display);font-weight:700;font-size:16px;color:var(--accent)}
+.gpu[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.gpu .fan{display:block;width:16px;height:16px;margin:0 auto 2px;border-radius:50%;border:2px dashed var(--muted);animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.gpu .fan{animation:none}}
+.slot{background:none;border:1px dashed var(--line);color:var(--muted)}
+.slot.open{border-color:var(--usdt);color:var(--usdt)}
+.slot[disabled]{cursor:default}
+.detail{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+.row-btns .btn{flex:1 1 160px;font-size:13px}
+.ups{display:flex;flex-direction:column}
+.up{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.up:first-child{border-top:0;padding-top:0}
+.up .name{font-weight:600}
+.up .lv{font-family:var(--f-mono);font-size:12px;color:var(--accent);margin-left:6px}
+.up .desc{grid-column:1;font-size:12px;color:var(--muted)}
+.up .btn{grid-row:1 / span 2;grid-column:2;font-size:13px;padding:8px 10px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv span:nth-child(even){text-align:right}
+.wallet{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tbl-wrap{overflow-x:auto;margin-top:12px}
+.cohort{width:100%;border-collapse:collapse;font-size:13px}
+.cohort th{text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line)}
+.cohort th:first-child,.cohort td:first-child{text-align:left}
+.cohort td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cohort td:first-child{font-family:var(--f-body)}
+.cohort tr.you td{color:var(--accent);font-weight:600}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.note{font-size:12px;color:var(--muted);text-align:center;padding:0 8px}
+.head-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.help-btn{font:600 12px var(--f-body);padding:6px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer}
+.help-btn:focus-visible,.close-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.overlay{position:fixed;inset:0;background:rgba(5,8,12,.72);z-index:30;display:flex;align-items:flex-end;justify-content:center;padding:env(safe-area-inset-top,0px) max(0px,env(safe-area-inset-right,0px)) 0 max(0px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;width:100%;max-width:600px;max-height:88%;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+@media (min-width:640px){.overlay{align-items:center}.sheet{border-radius:14px}}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-16px;background:var(--panel);padding-block:4px}
+.sheet-head h3{font-family:var(--f-display);font-size:20px;margin:0;letter-spacing:.04em}
+.close-btn{background:none;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px 10px;font:600 13px var(--f-body);cursor:pointer}
+.sheet h4{font-family:var(--f-display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.sheet p{margin:0;font-size:14px;color:var(--fg)}
+.sheet ol{margin:0;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.eq{display:flex;flex-direction:column}
+.eq div{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.eq div:first-child{border-top:0}
+.eq b{font-weight:600}
+.eq span{grid-column:1 / -1;color:var(--muted);font-size:13px}
+.eq .cost{justify-self:end}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:min(520px,calc(100% - 32px));background:var(--panel-2);border:1px solid var(--accent);color:var(--fg);padding:10px 14px;border-radius:8px;font-size:14px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+@media (max-width:380px){.stats{grid-template-columns:1fr 1fr}.meters{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <div class="bar">
-      <div class="logo">Bnb<span>P2P</span></div>
-      <div class="row">
-        <span class="pls" id="nativePrice">BNB —</span>
-        <button id="connectBtn">Connect</button>
+
+<div class="wrap">
+  <header>
+    <div class="brand">CD1 SAT <b>MINER</b> <span class="pill">DEMO</span></div>
+    <div class="head-r">
+    <button class="help-btn" id="helpBtn" type="button">How to play</button>
+    <div class="speed" role="group" aria-label="Simulation speed">
+      <button id="sp1" data-speed="1">1x</button>
+      <button id="sp60" data-speed="60">1m=1h</button>
+      <button id="sp3600" data-speed="3600">1s=1h</button>
+      <button id="sp86400" data-speed="86400">1s=1d</button>
+    </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="acc-label">Mined, ready to claim</div>
+    <div class="acc"><span id="acc" class="num">0</span><small>SAT</small></div>
+    <div class="sub num" id="accUsd">≈ 0.00000000 USDT</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Production</div><div class="v" id="satHour">0</div><div class="s">Sat / hour</div></div>
+      <div class="stat"><div class="k">Network share</div><div class="v" id="share">0%</div><div class="s" id="usdDay">0 USDT / day</div></div>
+      <div class="stat"><div class="k">Hash power</div><div class="v" id="hash">0</div><div class="s">effective H/s</div></div>
+    </div>
+    <button class="btn primary full" id="claimBtn" data-act="claim">Claim to demo wallet</button>
+  </section>
+
+  <section>
+    <h2>Capacity</h2>
+    <div class="meters" id="meters"></div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <section>
+    <h2><span>Rigs <span class="num" id="rigCount"></span></span><button class="btn" data-act="addRig" style="font-size:12px;padding:6px 10px">+ New rig <span class="cost c-USDT">3 USDT</span></button></h2>
+    <div class="rigs" id="rigs"></div>
+  </section>
+
+  <section>
+    <h2>Facility upgrades</h2>
+    <div class="ups" id="ups"></div>
+  </section>
+
+  <section>
+    <h2>Reward pool</h2>
+    <div class="kv">
+      <span>Pool</span><span class="num" id="pool"></span>
+      <span>Paid out per day (3%)</span><span class="num" id="poolDay"></span>
+      <span>Network, Sat / hour</span><span class="num" id="netHour"></span>
+      <span>Network hash</span><span class="num" id="netHash"></span>
+      <span>Added from USDT payments (99%)</span><span class="num" id="usdtFed"></span>
+      <span>CD1 in contract</span><span class="num" id="cd1Locked"></span>
+      <span>CD1 dividend today</span><span class="num" id="divDay"></span>
+      <span>Owner share (1%)</span><span class="num" id="ownerCut"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span>Network</span><span class="sub" style="text-transform:none;letter-spacing:0">200 simulated players</span></h2>
+    <div class="kv">
+      <span>CD1 price (live)</span><span class="num" id="cd1PriceTxt"></span>
+      <span>CD1 used in the game</span><span class="num" id="usedTxt"></span>
+      <span>Day</span><span class="num" id="dayNo"></span>
+      <span>Players joined</span><span class="num" id="joined"></span>
+      <span>Deposited by players</span><span class="num" id="deposits"></span>
+      <span>Paid out to miners</span><span class="num" id="paidOut"></span>
+      <span>CD1 dividends added</span><span class="num" id="divTotal"></span>
+      <span>CD1 spent by players</span><span class="num" id="botCd1"></span>
+    </div>
+    <div class="tbl-wrap"><table class="cohort">
+      <thead><tr><th>Group</th><th>Own money</th><th>CD1 spent</th><th>Net profit</th><th>Return</th></tr></thead>
+      <tbody>
+        <tr><td>First 50 to join</td><td id="eS"></td><td id="eC"></td><td id="eE"></td><td id="eR"></td></tr>
+        <tr><td>Last 50 to join</td><td id="lS"></td><td id="lC"></td><td id="lE"></td><td id="lR"></td></tr>
+        <tr class="you"><td>You</td><td id="yS"></td><td id="yC"></td><td id="yE"></td><td id="yR"></td></tr>
+      </tbody>
+    </table></div>
+    <p class="sub" style="margin:10px 0 0">Own money is the USDT a player put in from their own wallet; earnings spent again on upgrades and repairs are not counted twice. Net profit = everything earned minus everything spent (claimed or not). Return = (own money + net profit) ÷ own money, so 200% means the player doubled their money. CD1 spent is shown separately. About 40% of players reinvest everything for their first 30 days; the rest keep what they earn.</p>
+  </section>
+
+  <section>
+    <h2>Demo wallet</h2>
+    <div class="wallet">
+      <div class="stat"><div class="k">USDT</div><div class="v" id="wUsdt"></div></div>
+      <div class="stat"><div class="k">CD1</div><div class="v" id="wCd1"></div></div>
+    </div>
+  </section>
+
+  <p class="note">1 Sat = 0.00000001 USDT. Demo mode: balances, 200 other players and CD1 dividends are simulated. The contract starts with 10,000 CD1. CD1 has a supply of 450,000 and at $0.42 pays holders about 45 USDT per day in total (between 22 and 68 in the demo); the contract earns its share, about 1 USDT per day per 10,000 CD1. CD1 price moves on its own in the demo: it starts at $0.42 and rises by $2 for every 2,000 CD1 used in the game. Dividends are assumed to rise in line with the price. Simulated players spend CD1 on electricity, technicians and overclock. USDT payments send 99% to the pool and 1% to the owner. CD1 payments stay in the contract.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="overlay" id="help" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="sheet">
+    <div class="sheet-head"><h3 id="helpTitle">How to play</h3><button class="close-btn" id="helpClose" type="button">Close</button></div>
+    <div>
+      <h4>The goal</h4>
+      <p>You run a mining facility. Your GPUs produce hash power, and the reward pool pays out 3% of itself every day, split between all miners by their share of the network's hash power. More effective hash means a bigger share.</p>
+    </div>
+    <div>
+      <h4>What is a Sat?</h4>
+      <p>Rewards are counted in Sat, like Bitcoin. 1 Sat = 0.00000001 USDT, so 100,000,000 Sat = 1 USDT. Rewards build up every second and you claim them whenever you like.</p>
+    </div>
+    <div>
+      <h4>Equipment</h4>
+      <div class="eq">
+        <div><b>GPU</b><span class="cost c-USDT">USDT</span><span>Produces hash power. Each level gives more hash per watt. Tap a GPU to upgrade it.</span></div>
+        <div><b>Rig case</b><span class="cost c-USDT">USDT</span><span>Holds your GPUs. Upgrade it for more slots, or buy a new rig.</span></div>
+        <div><b>PSU</b><span class="cost c-USDT">USDT</span><span>Power supply of one rig. All GPUs in that rig must fit its watt limit.</span></div>
+        <div><b>Facility</b><span class="cost c-USDT">USDT</span><span>Sets how many rigs you can own: home room, garage, warehouse and up.</span></div>
+        <div><b>Electricity</b><span class="cost c-CD1">CD1</span><span>Total power for your whole facility. When it is full, no GPU can be added or upgraded.</span></div>
+        <div><b>Cooling</b><span class="cost c-USDT">USDT</span><span>GPUs make heat. If heat goes over your cooling capacity, hash drops by the same ratio.</span></div>
+        <div><b>Internet</b><span class="cost c-USDT">USDT</span><span>Uptime. At 85% uptime you mine 85% of the time.</span></div>
+        <div><b>Technician</b><span class="cost c-CD1">CD1</span><span>Permanent hash bonus, up to +15%.</span></div>
+        <div><b>Repair</b><span class="cost c-USDT">USDT</span><span>Once you have earned back what you spent, your rigs wear 1% per day. Repair brings them back to 100%. 99% of the repair cost goes to the reward pool.</span></div>
+        <div><b>Overclock</b><span class="cost c-CD1">CD1</span><span>+25% hash and +30% heat for 24 hours. Costs 0.05 CD1 per GPU and stacks time.</span></div>
       </div>
     </div>
-    <nav>
-      <button data-tab="orders" class="on">Orders</button>
-      <button data-tab="create">Create order</button>
-      <button data-tab="mine">My orders</button>
-      <button data-tab="list">List a token</button>
-      <button data-tab="prices">Prices</button>
-      <button data-tab="about">How it works</button>
-    </nav>
+    <div>
+      <h4>How to grow</h4>
+      <ol>
+        <li>Fill your free slots with GPUs and upgrade them.</li>
+        <li>When a limit is hit, the Capacity box tells you which one and what to buy.</li>
+        <li>Upgrade power (PSU and electricity) before high-level GPUs, since they draw more watts.</li>
+        <li>Keep heat under your cooling capacity, or you lose hash.</li>
+        <li>Claim your Sat and reinvest, or take it out.</li>
+      </ol>
+    </div>
+    <div>
+      <h4>Where your payments go</h4>
+      <p>99% of every USDT payment goes straight into the reward pool; 1% goes to the game owner. CD1 payments stay in the contract, and the USDT dividends that CD1 earns also feed the pool.</p>
+    </div>
+    <div>
+      <h4>Returns are not guaranteed</h4>
+      <p>What you earn depends on how many new miners join and on CD1 dividends. Miners who join early usually earn more. When fewer new miners join, late miners may not earn back what they spent. Wear after break-even slows down the earliest miners and moves part of their earnings back to the pool. Only spend what you can afford to lose.</p>
+    </div>
+    <div>
+      <h4>Good to know</h4>
+      <p>Your production is a live estimate. When new miners join, the network grows and your share gets smaller; when the pool grows, everyone earns more. In demo mode, balances and other players are simulated and nothing can be withdrawn.</p>
+    </div>
   </div>
-</header>
+</div>
 
-<main class="wrap">
-  <div id="notDeployed" class="banner warn hidden">Contract address not set yet. Prices work; orders will appear after launch.</div>
-  <div class="banner info small">Prices shown are indicative, read from PancakeSwap V2 pools. They are not used by the contract. Always check what you pay and receive. <a href="#" data-goto="about">Details</a></div>
-
-  <!-- ORDERS -->
-  <section id="tab-orders">
-    <div class="card">
-      <div class="grid2">
-        <div><label>They sell</label><select id="fSell"></select></div>
-        <div><label>They want</label><select id="fBuy"></select></div>
-      </div>
-      <div class="row small muted" style="margin-top:10px;justify-content:space-between">
-        <span id="ordersInfo">Loading…</span>
-        <button class="ghost" id="refreshBtn">Refresh</button>
-      </div>
-    </div>
-    <div class="card" id="ordersList"></div>
-  </section>
-
-  <!-- CREATE -->
-  <section id="tab-create" class="hidden">
-    <div class="card">
-      <h2>Create order</h2>
-      <p class="small muted">Lock your tokens. Anyone who pays your exact price takes the whole order. Cancel anytime, free.</p>
-      <label>You sell</label>
-      <div class="grid2">
-        <select id="cSellTok"></select>
-        <input id="cSellAmt" inputmode="decimal" placeholder="Amount">
-      </div>
-      <div class="small muted" id="cBal" style="margin-top:6px"></div>
-      <label>You want in return</label>
-      <div class="grid2">
-        <select id="cBuyTok"></select>
-        <input id="cBuyAmt" inputmode="decimal" placeholder="Amount">
-      </div>
-      <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
-        <span class="small muted">Set price vs market:</span>
-        <button class="ghost small" data-pct="0">Market</button>
-        <button class="ghost small" data-pct="2">+2%</button>
-        <button class="ghost small" data-pct="5">+5%</button>
-        <button class="ghost small" data-pct="10">+10%</button>
-      </div>
-      <h3>Preview</h3>
-      <div class="preview" id="cPreview"><span class="muted">Enter amounts</span></div>
-      <div id="cWarn" class="banner warn hidden" style="margin-top:10px"></div>
-      <div class="row" style="margin-top:14px">
-        <button id="cSubmit" style="flex:1">Create order</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- MINE -->
-  <section id="tab-mine" class="hidden">
-    <div class="card" id="mineList"><span class="muted">Connect your wallet to see your orders.</span></div>
-  </section>
-
-  <!-- LIST A TOKEN -->
-  <section id="tab-list" class="hidden">
-    <div class="card">
-      <h2>List a token</h2>
-      <p class="small">Anyone can add a new token. Cost: <b id="lFeeTxt">10 CD1</b>, paid to the creator's wallet. CD1 is the creator's own token.</p>
-      <ul class="small">
-        <li><b>Tokens with a transfer tax cannot be listed.</b> The contract sends a small test amount of your token in and straight back to you. If any of it goes missing, listing is rejected and nothing is charged.</li>
-        <li>You get the full test amount back. You need at least a tiny balance of the token.</li>
-        <li>Listing is permanent and is not an endorsement. Community tokens are marked <span class="tag comm">community</span>.</li>
-      </ul>
-      <label>Token contract address</label>
-      <div class="row">
-        <input id="lAddr" placeholder="0x…" autocomplete="off" spellcheck="false">
-        <button class="ghost" id="lCheck">Check</button>
-      </div>
-      <div class="preview" id="lInfo" style="margin-top:10px"><span class="muted">Paste an address and press Check.</span></div>
-      <div class="row" style="margin-top:14px">
-        <button id="lSubmit" style="flex:1" disabled>List token</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- PRICES -->
-  <section id="tab-prices" class="hidden">
-    <div class="card">
-      <h2>Market prices</h2>
-      <p class="small muted">Read live from PancakeSwap V2 pools (against WBNB or USDT, whichever is deeper). BNB price from the WBNB/USDT pool. Updated every 30 seconds.</p>
-      <table>
-        <thead><tr><th>Token</th><th class="r">USD</th><th class="r hide-sm">Pool liquidity</th></tr></thead>
-        <tbody id="priceTable"></tbody>
-      </table>
-      <p class="small muted" id="priceTime"></p>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="tab-about" class="hidden">
-    <div class="card">
-      <h2>How it works</h2>
-      <ul class="small">
-        <li>A seller locks tokens in the contract and names exactly what they want in return.</li>
-        <li>Anyone can fill the whole order. The seller gets exactly their price. No pools, no slippage.</li>
-        <li>Fee: <b>0.05%</b> from the seller and <b>0.05%</b> from the buyer, each taken from what they receive. No other fees.</li>
-        <li>Sellers can cancel anytime, free, with a full refund. Orders never expire.</li>
-        <li>The contract has <b>no owner and no admin</b>. Nobody, including the creator, can change rules, pause it, or touch funds.</li>
-        <li>Tokens with transfer taxes are rejected, both when listing and when trading.</li>
-      </ul>
-      <h3>Core and community tokens</h3>
-      <p class="small">Core tokens were set when the contract was deployed. Anyone can add more for 10 CD1 (paid to the creator; CD1 is the creator's own token). Community-listed tokens are not checked by anyone. Fake copies of popular tokens are possible. Always check the contract address. This site may hide reported tokens from its lists; the contract keeps working for them.</p>
-      <h3>Binance-Peg tokens</h3>
-      <p class="small">Many tokens on BNB Chain (ETH, XRP, ADA, DOT and others) are "Binance-Peg" versions, issued by Binance and backed by the original coins it holds. They are not the native coins of those chains.</p>
-      <h3>Where prices come from</h3>
-      <p class="small">Prices on this site are read directly from PancakeSwap V2 pools and converted to USD through USDT. They are <b>indicative only</b>. Pools with low liquidity can be moved easily and may show wrong prices; these are marked <span class="tag thin">thin</span>. The contract does not use these prices. Trades happen only at the exact amounts written in each order.</p>
-      <h3>Your responsibility</h3>
-      <p class="small">This is an interface to an immutable smart contract. Before creating or filling an order, check the token addresses, amounts and price yourself. Displayed prices may be delayed or wrong. Transactions on the blockchain are final and cannot be reversed. Use at your own risk. Nothing on this site is financial advice.</p>
-      <h3>Contract</h3>
-      <p class="small" id="contractInfo"></p>
-    </div>
-  </section>
-</main>
-
-<div class="toast" id="toast"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
 <script>
-// ===================== CONFIG =====================
-const CONTRACT = "0x16cb1F38EAB1ACe7dF8dF2808e86D04C51b26EaA"; // BnbP2P on BNB Chain
-const RPCS = [
-  "https://bsc-dataseed.bnbchain.org",
-  "https://bsc-dataseed1.defibit.io",
-  "https://bsc-rpc.publicnode.com",
-  "https://bsc.drpc.org",
-  "https://bsc-dataseed1.ninicoin.io",
-];
-let RPC = RPCS[0];
-const CHAIN_ID = 56;
-const EXPLORER = "https://bscscan.com";
-const NATIVE = "0x0000000000000000000000000000000000000000";
-const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-const USDT = "0x55d398326f99059fF775485246999027B3197955";
-const CD1 = "0x96481d0712104758F524157E77A3b0E04B783576";
-const FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"; // PancakeSwap V2
-const THIN_USD = 25000; // pool liquidity under this is flagged "thin"
-const HIDDEN = [];      // community tokens hidden from this site (lowercase addresses)
+const GPU=[{h:10,w:100,t:10,c:2},{h:25,w:150,t:15,c:3},{h:60,w:250,t:25,c:6},{h:140,w:400,t:40,c:12},{h:320,w:650,t:65,c:25}];
+const CASE=[{s:2,c:0},{s:4,c:4},{s:6,c:8},{s:8,c:15}];
+const PSU=[{w:300,c:0},{w:600,c:1},{w:1200,c:3},{w:2000,c:6},{w:5500,c:18}];
+const FAC=[{n:"Home room",r:1,c:0},{n:"Garage",r:3,c:6},{n:"Warehouse",r:6,c:18},{n:"Mining farm",r:12,c:48},{n:"Industrial site",r:25,c:120}];
+const ELEC=[{n:"City grid",w:500,c:0},{n:"Generator",w:2000,c:2},{n:"Solar array",w:10000,c:10},{n:"Hydro plant",w:40000,c:50},{n:"Micro reactor",w:150000,c:200}];
+const COOL=[{n:"Desk fan",t:60,c:0},{n:"Tower fans",t:200,c:2},{n:"Air conditioning",t:800,c:6},{n:"Industrial AC",t:3000,c:24},{n:"Liquid cooling",t:15000,c:72}];
+const NET=[{n:"ADSL",u:.85,c:0},{n:"Fiber",u:.92,c:1},{n:"Business fiber",u:.97,c:4},{n:"Redundant line",u:1,c:9}];
+const TECH=[{b:0,c:0},{b:.03,c:2},{b:.06,c:5},{b:.10,c:20},{b:.15,c:60}];
+const NEW_GPU=2, NEW_RIG=3, OC_PER_GPU=.05, POOL_SHARE=0.99, POOL_RATE=0.03, BASE_PRICE=0.42, PRICE_STEP=2, STEP_CD1=2000, CD1_SUPPLY=450000, DIV_TOTAL_DAY=45, DAY=86400, WEAR_DAY=0.01, REPAIR_RATE=0.5;
 
-const TOKENS = [
-  { sym: "BNB", addr: NATIVE, dec: 18, name: "BNB (native)" },
-  { sym: "USDT", addr: "0x55d398326f99059fF775485246999027B3197955", dec: 18, name: "Tether USD (Binance-Peg)" },
-  { sym: "USDC", addr: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", dec: 18, name: "USD Coin (Binance-Peg)" },
-  { sym: "FDUSD", addr: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409", dec: 18, name: "First Digital USD" },
-  { sym: "DAI", addr: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3", dec: 18, name: "Dai (Binance-Peg)" },
-  { sym: "BTCB", addr: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", dec: 18, name: "Bitcoin (Binance-Peg)" },
-  { sym: "ETH", addr: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", dec: 18, name: "Ethereum (Binance-Peg)" },
-  { sym: "XRP", addr: "0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE", dec: 18, name: "XRP (Binance-Peg)" },
-  { sym: "ADA", addr: "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47", dec: 18, name: "Cardano (Binance-Peg)" },
-  { sym: "DOGE", addr: "0xbA2aE424d960c26247Dd6c32edC70B295c744C43", dec: 8, name: "Dogecoin (Binance-Peg)" },
-  { sym: "SOL", addr: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF", dec: 18, name: "Solana (Binance-Peg)" },
-  { sym: "DOT", addr: "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402", dec: 18, name: "Polkadot (Binance-Peg)" },
-  { sym: "LINK", addr: "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD", dec: 18, name: "Chainlink (Binance-Peg)" },
-  { sym: "LTC", addr: "0x4338665CBB7B2485A8855A139b75D5e34AB0DB94", dec: 18, name: "Litecoin (Binance-Peg)" },
-  { sym: "BCH", addr: "0x8fF795a6F4D97E7887C79beA79aba5cc76444aDf", dec: 18, name: "Bitcoin Cash (Binance-Peg)" },
-  { sym: "ATOM", addr: "0x0Eb3a705fc54725037CC9e008bDede697f62F335", dec: 18, name: "Cosmos (Binance-Peg)" },
-  { sym: "FIL", addr: "0x0D8Ce2A99Bb6e3B7Db580eD848240e4a0F9aE153", dec: 18, name: "Filecoin (Binance-Peg)" },
-  { sym: "TRX", addr: "0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12e3", dec: 6, name: "TRON" },
-  { sym: "UNI", addr: "0xBf5140A22578168FD562DCcF235E5D43A02ce9B1", dec: 18, name: "Uniswap (Binance-Peg)" },
-  { sym: "INJ", addr: "0xa2B726B1145A4773F68593CF171187d8EBe4d495", dec: 18, name: "Injective" },
-  { sym: "CAKE", addr: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", dec: 18, name: "PancakeSwap" },
-  { sym: "TWT", addr: "0x4B0F1812e5Df2A09796481Ff14017e6005508003", dec: 18, name: "Trust Wallet Token" },
-  { sym: "XVS", addr: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63", dec: 18, name: "Venus" },
-  { sym: "SHIB", addr: "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D", dec: 18, name: "Shiba Inu (Binance-Peg)" },
-  { sym: "PEPE", addr: "0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00", dec: 18, name: "Pepe" },
-  { sym: "CD1", addr: "0x96481d0712104758F524157E77A3b0E04B783576", dec: 18, name: "CD1 (creator's token)" },
-];
-TOKENS.forEach(t => t.core = true);
-const byAddr = Object.fromEntries(TOKENS.map(t => [t.addr.toLowerCase(), t]));
-const tokOf = a => byAddr[a.toLowerCase()] || { sym: short(a), addr: a, dec: 18, name: "Unknown token", core: false };
-const visibleTokens = () => TOKENS.filter(t => !HIDDEN.includes(t.addr.toLowerCase()));
+const S={usdt:1000,cd1:1000,pool:100,acc:0,cd1Locked:10000,usdtFed:0,ownerCut:0,fac:0,elec:0,cool:0,net:0,tech:0,ocUntil:0,t:0,day:-1,divToday:0,divTotal:0,deposits:0,paidOut:0,spent:0,own:0,claimed:0,cd1Spent:0,cd1Price:0.42,lpCd1:20000,lpUsdt:8400,holderSold:0,holderCd1:20000,cd1Used:0,earned:0,wear:0,botCd1:0,speed:60,rigs:[{s:0,p:0,g:[0]}],sel:null};
 
-const P2P_ABI = [
-  "function createOrder(address,uint256,address,uint256) payable returns (uint256)",
-  "function fillOrder(uint256) payable",
-  "function cancelOrder(uint256)",
-  "function listToken(address,uint256)",
-  "function orderCount() view returns (uint256)",
-  "function getOrders(uint256,uint256) view returns (tuple(address maker,bool active,address sellToken,address buyToken,uint128 sellAmount,uint128 buyAmount)[])",
-  "function allowedTokens() view returns (address[])",
-  "function isAllowedToken(address) view returns (bool)",
-  "function LISTING_FEE() view returns (uint256)",
-  "function FEE_RECIPIENT() view returns (address)",
-  "error TokenNotAllowed()", "error SameToken()", "error AmountTooSmall()", "error AmountTooLarge()",
-  "error BadValue()", "error NotActive()", "error NotMaker()", "error TransferShortfall()", "error NativeTransferFailed()",
-  "error ZeroAddress()", "error AlreadyListed()", "error NotAContract()", "error TaxedToken()",
-];
-const ERR_TEXT = {
-  TokenNotAllowed: "This token is not listed.",
-  SameToken: "Choose two different tokens.",
-  AmountTooSmall: "Amount too small.",
-  AmountTooLarge: "Amount too large.",
-  BadValue: "Wrong BNB amount sent.",
-  NotActive: "This order is already filled or cancelled.",
-  NotMaker: "Only the seller can cancel this order.",
-  TransferShortfall: "Token transfer came in short (taxed token?). Nothing was moved.",
-  NativeTransferFailed: "BNB transfer failed.",
-  ZeroAddress: "Invalid address.",
-  AlreadyListed: "This token is already listed.",
-  NotAContract: "This address is not a token contract.",
-  TaxedToken: "This token has a transfer tax and cannot be listed. Nothing was charged.",
+const $=id=>document.getElementById(id);
+const fmtInt=n=>Math.floor(n).toLocaleString("en-US");
+const fmtTok=(n,d)=>Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const costTag=(a,cur)=>`<span class="cost c-${cur}">${fmtTok(a,a%1?1:0)} ${cur}</span>`;
+
+const oc=()=>S.ocUntil>S.t;
+const gpuCount=()=>S.rigs.reduce((s,r)=>s+r.g.length,0);
+const rigW=r=>r.g.reduce((s,l)=>s+GPU[l].w,0);
+const totW=()=>S.rigs.reduce((s,r)=>s+rigW(r),0);
+const rawHash=()=>S.rigs.reduce((s,r)=>s+r.g.reduce((a,l)=>a+GPU[l].h,0),0);
+const heat=()=>S.rigs.reduce((s,r)=>s+r.g.reduce((a,l)=>a+GPU[l].t,0),0)*(oc()?1.3:1);
+const coolEff=()=>{const h=heat();return h<=0?1:Math.min(1,COOL[S.cool].t/h)};
+const effHash=()=>rawHash()*coolEff()*NET[S.net].u*(1+TECH[S.tech].b)*(oc()?1.25:1)*(1-S.wear);
+const wearStep=(w,dt)=>Math.min(.9,1-(1-w)*Math.pow(1-WEAR_DAY,dt/DAY));
+const pastRoi=()=>S.spent>0&&S.earned>=S.spent;
+const repairCost=()=>S.spent*S.wear*REPAIR_RATE;
+const share=()=>{const h=effHash(),t=h+botHash();return t>0?h/t:0};
+function rng(seed){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}}
+const BOTS=(()=>{const R=rng(20261101),b=[];for(let i=0;i<200;i++){const join=i<30?0:1+R()*89,u=R(),budget=u<.5?20+R()*80:u<.85?100+R()*400:500+R()*1500;b.push({join:join*DAY,budget,hpu:budget<100?4:budget<500?6:7.5,reinv:R()<.4,repairs:R()<.7,oc:R()<.3,wear:0,cd1:0,h:0,active:false,earned:0,pending:0,spent:0})}return b.sort((a,c)=>a.join-c.join)})();
+const EARLY=BOTS.slice(0,50), LATE=BOTS.slice(-50);
+const botHash=()=>{let h=0;for(const b of BOTS)if(b.active)h+=b.h*(1-b.wear);return h};
+function buyCd1(n){S.cd1Used+=n;S.cd1Price=BASE_PRICE+PRICE_STEP*S.cd1Used/STEP_CD1}
+function sellCd1(n){n=Math.min(n,S.holderCd1);if(n<=0)return;S.holderCd1-=n;const k=S.lpCd1*S.lpUsdt;S.lpCd1+=n;S.lpUsdt=k/S.lpCd1;S.cd1Price=S.lpUsdt/S.lpCd1;S.holderSold+=n}
+function addUsdtToPool(amt){S.pool+=amt*POOL_SHARE;S.usdtFed+=amt*POOL_SHARE;S.ownerCut+=amt*(1-POOL_SHARE)}
+const netHourSat=()=>S.pool*POOL_RATE/24*1e8;
+
+let toastTimer;
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,3200)}
+
+function pay(cur,amt){
+  const k=cur.toLowerCase();
+  if(S[k]+1e-12<amt){toast(`Not enough ${cur}: need ${fmtTok(amt,amt%1?1:0)}, you have ${fmtTok(S[k],2)}.`);return false}
+  S[k]-=amt;
+  if(cur==="USDT"){addUsdtToPool(amt);S.spent+=amt;S.own=Math.max(S.own,S.spent-S.claimed)}
+  if(cur==="CD1"){S.cd1Locked+=amt;S.cd1Spent+=amt;buyCd1(amt)}
+  return true;
+}
+function powerOk(dRig,r,label){
+  if(rigW(r)+dRig>PSU[r.p].w){toast(`PSU limit: this rig would draw ${rigW(r)+dRig} W of ${PSU[r.p].w} W. Upgrade the PSU.`);return false}
+  if(totW()+dRig>ELEC[S.elec].w){toast(`Electricity cap: ${totW()+dRig} W of ${fmtInt(ELEC[S.elec].w)} W. Upgrade electricity (CD1).`);return false}
+  return true;
+}
+
+const A={
+  claim(){if(S.acc<1){toast("Nothing to claim yet.");return}const u=S.acc/1e8;S.usdt+=u;S.claimed+=u;toast(`Claimed ${fmtInt(S.acc)} Sat = ${fmtTok(u,8)} USDT. In the real game this goes to your wallet.`);S.acc=0},
+  addGpu(ri){const r=S.rigs[ri];if(r.g.length>=CASE[r.s].s){toast("Rig case is full. Upgrade the case for more slots.");return}if(!powerOk(GPU[0].w,r))return;if(!pay("USDT",NEW_GPU))return;r.g.push(0);S.sel={r:ri,g:r.g.length-1};toast("GPU installed. Mining at Lv1.")},
+  sel(ri,gi){S.sel=(S.sel&&S.sel.r===ri&&S.sel.g===gi)?null:{r:ri,g:gi}},
+  upGpu(ri,gi){const r=S.rigs[ri],l=r.g[gi];if(l>=GPU.length-1){toast("This GPU is at max level.");return}const n=GPU[l+1];if(!powerOk(n.w-GPU[l].w,r))return;if(!pay("USDT",n.c))return;r.g[gi]=l+1;toast(`GPU upgraded to Lv${l+2}: ${n.h} H/s.`)},
+  upCase(ri){const r=S.rigs[ri];if(r.s>=CASE.length-1){toast("Case is at max level.");return}if(!pay("USDT",CASE[r.s+1].c))return;r.s++;toast(`Case now holds ${CASE[r.s].s} GPUs.`)},
+  upPsu(ri){const r=S.rigs[ri];if(r.p>=PSU.length-1){toast("PSU is at max level.");return}if(!pay("USDT",PSU[r.p+1].c))return;r.p++;toast(`PSU now carries ${fmtInt(PSU[r.p].w)} W.`)},
+  addRig(){if(S.rigs.length>=FAC[S.fac].r){toast(`${FAC[S.fac].n} fits ${FAC[S.fac].r} rig${FAC[S.fac].r>1?"s":""}. Upgrade the facility.`);return}if(!pay("USDT",NEW_RIG))return;S.rigs.push({s:0,p:0,g:[]});toast("New rig placed. Add a GPU to start it.")},
+  fac(){if(S.fac>=FAC.length-1)return;if(!pay("USDT",FAC[S.fac+1].c))return;S.fac++;toast(`Moved to ${FAC[S.fac].n}: room for ${FAC[S.fac].r} rigs.`)},
+  elec(){if(S.elec>=ELEC.length-1)return;if(!pay("CD1",ELEC[S.elec+1].c))return;S.elec++;toast(`${ELEC[S.elec].n} online: ${fmtInt(ELEC[S.elec].w)} W.`)},
+  cool(){if(S.cool>=COOL.length-1)return;if(!pay("USDT",COOL[S.cool+1].c))return;S.cool++;toast(`${COOL[S.cool].n} installed.`)},
+  net(){if(S.net>=NET.length-1)return;if(!pay("USDT",NET[S.net+1].c))return;S.net++;toast(`${NET[S.net].n}: ${Math.round(NET[S.net].u*100)}% uptime.`)},
+  tech(){if(S.tech>=TECH.length-1)return;if(!pay("CD1",TECH[S.tech+1].c))return;S.tech++;toast(`Technician Lv${S.tech}: +${Math.round(TECH[S.tech].b*100)}% hash.`)},
+  repair(){if(S.wear<.005){toast("Your rigs are in good condition.");return}const c=repairCost();if(!pay("USDT",c))return;S.wear=0;toast(`Repaired for ${fmtTok(c,2)} USDT. 99% of it went to the pool.`)},
+  oc(){const n=gpuCount();if(!n){toast("Install a GPU before overclocking.");return}const c=OC_PER_GPU*n;if(!pay("CD1",c))return;S.ocUntil=Math.max(S.t,S.ocUntil)+86400;toast("Overclock on: +25% hash, +30% heat for 24 h.")}
 };
-const P2P_IFACE = new ethers.Interface(P2P_ABI);
-const ERC20_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function allowance(address,address) view returns (uint256)",
-  "function approve(address,uint256) returns (bool)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
-  "function name() view returns (string)",
-];
-const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
-const PAIR_ABI = ["function getReserves() view returns (uint112,uint112,uint32)", "function token0() view returns (address)"];
 
-// ===================== STATE =====================
-const E = ethers;
-const makeProvider = url => new E.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: E.Network.from(CHAIN_ID), batchMaxCount: 1 });
-let ro = makeProvider(RPC);
-// Pick the first public RPC that answers (they often limit browsers).
-async function pickRpc() {
-  for (const url of RPCS) {
-    try {
-      const p = makeProvider(url);
-      const n = await Promise.race([p.getBlockNumber(), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 4000))]);
-      if (n > 0) { RPC = url; ro = p; return; }
-    } catch (e) { console.warn("RPC failed", url, e?.message); }
-  }
+function meter(label,val,max,txt,inv){
+  const p=max>0?Math.min(100,val/max*100):0;
+  const cls=inv?(p<88?"warn":""):(p>=100?"bad":p>=80?"warn":"");
+  return `<div class="meter"><div class="top"><span>${label}</span><span class="num">${txt}</span></div><div class="bar"><i class="${cls}" style="width:${p}%"></i></div></div>`;
 }
-// Run async jobs a few at a time so public RPCs don't rate-limit us.
-async function mapLimit(items, limit, fn) {
-  const out = []; let i = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) { const k = i++; out[k] = await fn(items[k]); }
-  });
-  await Promise.all(workers);
-  return out;
-}
-let signer = null, account = null;
-let orders = [];
-const price = {};            // addrLower -> { usd, liqUsd }
-let bnbUsd = 0;
-let listingFee = 10n * 10n ** 18n;
-const pairCache = {};
-
-const $ = id => document.getElementById(id);
-function short(a) { return a.slice(0, 6) + "…" + a.slice(-4); }
-const fmt = (n, d = 4) => {
-  if (n === null || n === undefined || !isFinite(n)) return "—";
-  if (n === 0) return "0";
-  const a = Math.abs(n);
-  if (a >= 1e9) return (n / 1e9).toFixed(2) + "B";
-  if (a >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (a >= 1e3) return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (a >= 1) return n.toLocaleString("en-US", { maximumFractionDigits: d });
-  return n.toPrecision(4);
-};
-const usd = n => (n === null || !isFinite(n)) ? "—" : "$" + fmt(n, 2);
-const units = (amt, t) => Number(E.formatUnits(amt, t.dec));
-const toast = (msg, ms = 4000) => { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms); };
-const tokBadge = t => `<span class="tok"><span class="dot">${t.sym[0]}</span>${t.sym}</span>`;
-const commTag = t => t.core ? "" : ' <span class="tag comm">community</span>';
-const valueUsd = (addr, amtBig) => { const t = tokOf(addr), p = price[addr.toLowerCase()]; return p && p.usd ? units(amtBig, t) * p.usd : null; };
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-// ===================== TOKENS =====================
-async function refreshDecimals() {
-  await mapLimit(TOKENS.filter(t => t.addr !== NATIVE), 4, async t => {
-    try { t.dec = Number(await new E.Contract(t.addr, ERC20_ABI, ro).decimals()); } catch {}
-  });
+function hintText(){
+  const opts=[];
+  const slotsFree=S.rigs.some(r=>r.g.length<CASE[r.s].s);
+  const psuRoom=S.rigs.some(r=>r.g.length<CASE[r.s].s&&rigW(r)+100<=PSU[r.p].w);
+  if(S.wear>=.05)return `<b>Wear:</b> your rigs run at ${Math.round((1-S.wear)*100)}%. Repair for ${fmtTok(repairCost(),2)} USDT; 99% of it goes to the pool.`;
+  if(heat()>COOL[S.cool].t)return `<b>Overheating:</b> hash is running at ${Math.round(coolEff()*100)}%. Upgrade cooling.`;
+  if(totW()+100>ELEC[S.elec].w)return `<b>Next limit: electricity.</b> ${fmtInt(totW())} of ${fmtInt(ELEC[S.elec].w)} W used. Upgrade it with CD1.`;
+  if(slotsFree&&!psuRoom)return `<b>Next limit: PSU.</b> Your free slots have no power left. Upgrade a PSU.`;
+  if(!slotsFree&&S.rigs.length>=FAC[S.fac].r)return `<b>Next limit: space.</b> Cases are full and the ${FAC[S.fac].n.toLowerCase()} has no room. Upgrade a case (USDT) or the facility.`;
+  if(!slotsFree)return `<b>Next limit: slots.</b> Upgrade a case (USDT) or add a rig.`;
+  return `<b>Room to grow:</b> add a GPU for 2 USDT or upgrade one you have.`;
 }
 
-async function loadCommunityTokens() {
-  if (!CONTRACT) return;
-  try {
-    const c = p2pRead();
-    const list = await c.allowedTokens();
-    try { listingFee = await c.LISTING_FEE(); } catch {}
-    const fresh = list.filter(a => !byAddr[a.toLowerCase()]);
-    await mapLimit(fresh, 3, async a => {
-      const ec = new E.Contract(a, ERC20_ABI, ro);
-      let sym = short(a), name = "Community token", dec = 18;
-      try { sym = (await ec.symbol()).slice(0, 12); } catch {}
-      try { name = (await ec.name()).slice(0, 40); } catch {}
-      try { dec = Number(await ec.decimals()); } catch {}
-      const t = { sym: esc(sym), addr: a, dec, name: esc(name), core: false };
-      TOKENS.push(t); byAddr[a.toLowerCase()] = t;
-    });
-    if (fresh.length) fillSelects();
-  } catch (e) { console.error(e); }
-}
+function render(){
+  const ri=S.rigs.length, fac=FAC[S.fac];
+  $("meters").innerHTML=
+    meter("Power",totW(),ELEC[S.elec].w,`${fmtInt(totW())} / ${fmtInt(ELEC[S.elec].w)} W`)+
+    meter("Heat",heat(),COOL[S.cool].t,`${fmtInt(heat())} / ${fmtInt(COOL[S.cool].t)}`)+
+    meter("Rigs",ri,fac.r,`${ri} / ${fac.r}`)+
+    meter("Uptime",NET[S.net].u,1,`${Math.round(NET[S.net].u*100)}%`,true)+
+    meter("Condition",1-S.wear,1,`${Math.round((1-S.wear)*100)}%`,true)+
+    meter("Earned back",S.spent?S.earned:0,S.spent||1,S.spent?`${(S.earned/S.spent*100).toFixed(1)}%`:"–",true);
+  $("hint").innerHTML=hintText();
+  $("rigCount").textContent=`${ri}/${fac.r}`;
 
-// ===================== PRICES =====================
-async function readPair(a, b) {
-  const key = (a + b).toLowerCase();
-  let pair = pairCache[key];
-  if (pair === undefined) {
-    try { pair = await new E.Contract(FACTORY, FACTORY_ABI, ro).getPair(a, b); } catch { pair = E.ZeroAddress; }
-    pairCache[key] = pair;
-  }
-  if (!pair || pair === E.ZeroAddress) return null;
-  const pc = new E.Contract(pair, PAIR_ABI, ro);
-  const [[r0, r1], t0] = await Promise.all([pc.getReserves(), pc.token0()]);
-  const aIs0 = t0.toLowerCase() === a.toLowerCase();
-  return { ra: aIs0 ? r0 : r1, rb: aIs0 ? r1 : r0 };
-}
-
-async function priceToken(t) {
-  // returns { usd, liqUsd } using the deeper of token/WBNB and token/USDT
-  const dec = t.dec;
-  const out = [];
-  try {
-    const p = await readPair(t.addr, WBNB);
-    if (p && p.ra > 0n) {
-      const ta = Number(E.formatUnits(p.ra, dec)), tb = Number(E.formatUnits(p.rb, 18));
-      out.push({ usd: tb / ta * bnbUsd, liqUsd: 2 * tb * bnbUsd });
+  $("rigs").innerHTML=S.rigs.map((r,i)=>{
+    const slots=CASE[r.s].s; let cells="";
+    for(let k=0;k<slots;k++){
+      if(k<r.g.length){const l=r.g[k],sel=S.sel&&S.sel.r===i&&S.sel.g===k;
+        cells+=`<button class="gpu" id="gpu-${i}-${k}" data-act="sel" data-r="${i}" data-g="${k}" aria-pressed="${!!sel}"><span class="fan"></span><div class="l">L${l+1}</div>${GPU[l].h} H/s</button>`;
+      } else if(k===r.g.length){cells+=`<button class="slot open" id="slot-${i}" data-act="addGpu" data-r="${i}">+ GPU<br>2 USDT</button>`}
+      else cells+=`<button class="slot" disabled aria-label="Empty slot">empty</button>`;
     }
-  } catch (e) { console.warn("price", t.sym, e?.message); }
-  try {
-    const p = await readPair(t.addr, USDT);
-    if (p && p.ra > 0n) {
-      const ta = Number(E.formatUnits(p.ra, dec)), tb = Number(E.formatUnits(p.rb, 18));
-      out.push({ usd: tb / ta, liqUsd: 2 * tb });
+    let detail="";
+    if(S.sel&&S.sel.r===i&&r.g[S.sel.g]!==undefined){
+      const l=r.g[S.sel.g],c=GPU[l],n=GPU[l+1];
+      detail=`<div class="detail"><div>GPU ${S.sel.g+1} · Lv${l+1} · <span class="num">${c.h} H/s · ${c.w} W · ${c.t} heat</span></div>${n?`<button class="btn" data-act="upGpu" data-r="${i}" data-g="${S.sel.g}">Upgrade to Lv${l+2}: <span class="num">${n.h} H/s, ${n.w} W</span> ${costTag(n.c,"USDT")}</button>`:`<div class="sub">Max level reached.</div>`}</div>`;
     }
-  } catch (e) { console.warn("price", t.sym, e?.message); }
-  out.sort((x, y) => y.liqUsd - x.liqUsd);
-  return out[0] || { usd: null, liqUsd: 0 };
-}
-
-async function loadPrices() {
-  try {
-    const p = await readPair(WBNB, USDT);
-    if (!p) throw new Error("WBNB/USDT pool not readable");
-    bnbUsd = Number(E.formatUnits(p.rb, 18)) / Number(E.formatUnits(p.ra, 18));
-    price[NATIVE] = { usd: bnbUsd, liqUsd: Infinity };
-    price[USDT.toLowerCase()] = { usd: 1, liqUsd: Infinity };
-    await mapLimit(TOKENS.filter(t => t.addr !== NATIVE && t.addr.toLowerCase() !== USDT.toLowerCase()), 4,
-      async t => { price[t.addr.toLowerCase()] = await priceToken(t); });
-    $("nativePrice").textContent = "BNB " + (bnbUsd ? "$" + fmt(bnbUsd, 2) : "—");
-    renderPrices(); renderOrders(); renderMine(); updatePreview();
-  } catch (e) {
-    console.error(e);
-    $("priceTime").textContent = "Price source unreachable (" + (e?.shortMessage || e?.message || e) + "). Orders still work; prices are only for display.";
-  }
-}
-
-function renderPrices() {
-  $("priceTable").innerHTML = visibleTokens().map(t => {
-    const p = price[t.addr.toLowerCase()] || {};
-    const thin = p.usd && t.addr !== NATIVE && t.addr.toLowerCase() !== USDT.toLowerCase() && (p.liqUsd ?? 0) < THIN_USD;
-    return `<tr>
-      <td>${tokBadge(t)}${commTag(t)} ${thin ? '<span class="tag thin">thin</span>' : ""}<div class="small muted">${t.name}</div></td>
-      <td class="r">${p.usd ? "$" + fmt(p.usd, 6) : "—"}</td>
-      <td class="r hide-sm">${p.liqUsd === Infinity ? "—" : usd(p.liqUsd)}</td></tr>`;
+    const cn=CASE[r.s+1],pn=PSU[r.p+1];
+    return `<div class="rig"><div class="rig-head"><b>RIG ${i+1}</b><span class="sub num">${slots}-slot case · PSU ${fmtInt(rigW(r))}/${fmtInt(PSU[r.p].w)} W</span></div>
+      <div class="slots">${cells}</div>${detail}
+      <div class="row-btns">
+        ${cn?`<button class="btn" data-act="upCase" data-r="${i}">Case → ${cn.s} slots ${costTag(cn.c,"USDT")}</button>`:""}
+        ${pn?`<button class="btn" data-act="upPsu" data-r="${i}">PSU → ${fmtInt(pn.w)} W ${costTag(pn.c,"USDT")}</button>`:""}
+      </div></div>`;
   }).join("");
-  $("priceTime").textContent = "Last update: " + new Date().toLocaleTimeString();
+
+  const ocLeft=Math.max(0,S.ocUntil-S.t);
+  const rows=[
+    ["fac","Facility",S.fac,FAC,FAC[S.fac].n+` · ${FAC[S.fac].r} rig${FAC[S.fac].r>1?"s":""}`,x=>`${x.n}, ${x.r} rigs`,"USDT"],
+    ["elec","Electricity",S.elec,ELEC,`${ELEC[S.elec].n} · ${fmtInt(ELEC[S.elec].w)} W`,x=>`${x.n}, ${fmtInt(x.w)} W`,"CD1"],
+    ["cool","Cooling",S.cool,COOL,`${COOL[S.cool].n} · ${fmtInt(COOL[S.cool].t)} heat`,x=>`${x.n}, ${fmtInt(x.t)} heat`,"USDT"],
+    ["net","Internet",S.net,NET,`${NET[S.net].n} · ${Math.round(NET[S.net].u*100)}% uptime`,x=>`${x.n}, ${Math.round(x.u*100)}%`,"USDT"],
+    ["tech","Technician",S.tech,TECH,S.tech?`+${Math.round(TECH[S.tech].b*100)}% hash`:"None hired",x=>`+${Math.round(x.b*100)}% hash`,"CD1"]
+  ];
+  $("ups").innerHTML=rows.map(([k,name,lv,tbl,now,nx,cur])=>{
+    const n=tbl[lv+1];
+    return `<div class="up"><div><span class="name">${name}</span><span class="lv">Lv${lv+1}</span></div>
+      ${n?`<button class="btn" id="up-${k}" data-act="${k}">${costTag(n.c,cur)}</button>`:`<span class="sub">Max</span>`}
+      <div class="desc">${now}${n?` → ${nx(n)}`:""}</div></div>`;
+  }).join("")+
+  `<div class="up"><div><span class="name">Overclock</span><span class="lv">${ocLeft?"ON":"OFF"}</span></div>
+    <button class="btn" id="up-oc" data-act="oc">${costTag(OC_PER_GPU*gpuCount(),"CD1")}</button>
+    <div class="desc" id="ocDesc"></div></div>
+  <div class="up"><div><span class="name">Repair</span><span class="lv">${Math.round((1-S.wear)*100)}%</span></div>
+    <button class="btn" id="up-repair" data-act="repair">${costTag(repairCost(),"USDT")}</button>
+    <div class="desc">${pastRoi()?"You have earned back what you spent, so your rigs wear 1% per day.":"No wear until you earn back what you spent."}</div></div>`;
+  tickText();
 }
 
-// ===================== ORDERS =====================
-function p2pRead() { return new E.Contract(CONTRACT, P2P_ABI, ro); }
-
-async function loadOrders() {
-  if (!CONTRACT) { $("ordersInfo").textContent = "Not launched yet"; $("ordersList").innerHTML = '<span class="muted">No orders yet.</span>'; return; }
-  try {
-    const c = p2pRead();
-    const n = Number(await c.orderCount());
-    const PAGE = 200, all = [];
-    for (let s = 0; s < n; s += PAGE) {
-      const res = await c.getOrders(s, PAGE);
-      res.forEach((o, i) => all.push({ id: s + i, maker: o.maker, active: o.active, sellToken: o.sellToken, buyToken: o.buyToken, sellAmount: o.sellAmount, buyAmount: o.buyAmount }));
-    }
-    orders = all;
-    renderOrders(); renderMine();
-  } catch (e) { console.error(e); $("ordersInfo").textContent = "Could not load orders"; }
+function tickText(){
+  const sh=share(), nh=netHourSat();
+  $("acc").textContent=fmtInt(S.acc);
+  $("accUsd").textContent=`≈ ${fmtTok(S.acc/1e8,8)} USDT`;
+  $("satHour").textContent=fmtInt(nh*sh);
+  $("share").textContent=(sh*100).toFixed(3)+"%";
+  $("usdDay").textContent=fmtTok(S.pool*POOL_RATE*sh,5)+" USDT/day";
+  $("hash").textContent=effHash().toLocaleString("en-US",{maximumFractionDigits:1});
+  $("pool").textContent=fmtTok(S.pool,4)+" USDT";
+  $("poolDay").textContent=fmtTok(S.pool*POOL_RATE,4)+" USDT";
+  $("netHour").textContent=fmtInt(nh);
+  $("netHash").textContent=fmtInt(effHash()+botHash())+" H/s";
+  $("cd1Locked").textContent=fmtTok(S.cd1Locked,1)+" CD1";
+  $("usdtFed").textContent=fmtTok(S.usdtFed,2)+" USDT";
+  $("ownerCut").textContent=fmtTok(S.ownerCut,2)+" USDT";
+  $("divDay").textContent=fmtTok(S.divToday,2)+" USDT";
+  $("cd1PriceTxt").textContent="$"+fmtTok(S.cd1Price,S.cd1Price<10?3:2)+` (${(S.cd1Price/BASE_PRICE).toFixed(2)}×)`;
+  $("usedTxt").textContent=fmtInt(S.cd1Used)+" CD1";
+  $("dayNo").textContent=String(Math.floor(S.t/DAY)+1);
+  $("joined").textContent=BOTS.filter(b=>b.active).length+" / 200";
+  $("deposits").textContent=fmtTok(S.deposits,0)+" USDT";
+  $("paidOut").textContent=fmtTok(S.paidOut,2)+" USDT";
+  $("divTotal").textContent=fmtTok(S.divTotal,2)+" USDT";
+  $("botCd1").textContent=fmtTok(S.botCd1,0)+" CD1";
+  cohort(EARLY,"e");cohort(LATE,"l");
+  row("y",S.own,S.earned-S.spent,S.cd1Spent);
+  $("wUsdt").textContent=fmtTok(S.usdt,4);
+  $("wCd1").textContent=fmtTok(S.cd1,1);
+  const d=$("ocDesc");
+  if(d){const left=Math.max(0,S.ocUntil-S.t);d.textContent=left?`+25% hash, +30% heat · ${Math.floor(left/3600)}h ${Math.floor(left%3600/60)}m left · tap to add 24 h`:`+25% hash, +30% heat for 24 h · 0.05 CD1 per GPU`}
 }
 
-function dealPct(o) {
-  const get = valueUsd(o.sellToken, o.sellAmount), pay = valueUsd(o.buyToken, o.buyAmount);
-  if (!get || !pay) return null;
-  return (get * 0.9995 / pay - 1) * 100;
+let wasOc=false;
+function row(k,own,net,cd1){
+  $(k+"S").textContent=own>0?fmtTok(own,0):"–";
+  $(k+"C").textContent=own>0?fmtTok(cd1,0):"–";
+  const n=$(k+"E");n.textContent=own>0?(net>=0?"+":"")+fmtTok(net,2):"–";n.className=own>0?(net>=0?"pos":"neg"):"";
+  const r=$(k+"R");
+  if(own>0){const p=(own+net)/own*100;r.textContent=p.toFixed(1)+"%";r.className=p>=100?"pos":"neg"}else{r.textContent="not in yet";r.className=""}
+}
+function cohort(list,k){let own=0,net=0,c=0;for(const b of list)if(b.active){own+=b.budget;net+=b.earned-b.spent;c+=b.cd1}row(k,own,net,c)}
+function tick(){
+  const dt=0.25*S.speed;
+  S.t+=dt;
+  const d=Math.floor(S.t/DAY);
+  let newDay=false;
+  if(d!==S.day){S.day=d;newDay=true;S.divToday=DIV_TOTAL_DAY*(S.cd1Price/BASE_PRICE)*(.5+Math.random())*Math.min(1,S.cd1Locked/CD1_SUPPLY);
+    for(const b of BOTS){if(!b.active)continue;
+      if(b.reinv&&S.t-b.join<30*DAY&&b.pending>0){const a=b.pending;addUsdtToPool(a);b.h+=a*b.hpu;b.spent+=a;b.pending=0}
+      if(b.repairs&&b.wear>=.1){const c=b.spent*b.wear*REPAIR_RATE;if(b.pending>=c){addUsdtToPool(c);b.spent+=c;b.pending-=c;b.wear=0}}
+      if(b.oc){const c=b.h/9200;b.cd1+=c;S.cd1Locked+=c;S.botCd1+=c;buyCd1(c)}}}
+  for(const b of BOTS){if(!b.active&&S.t>=b.join){b.active=true;b.h=b.budget*b.hpu;b.spent=b.budget;S.deposits+=b.budget;addUsdtToPool(b.budget);const c=b.budget*.1;b.cd1+=c;S.cd1Locked+=c;S.botCd1+=c;buyCd1(c)}}
+  const mine=effHash(),bh=botHash(),tot=mine+bh;
+  const dist=tot>0?S.pool*(1-Math.pow(1-POOL_RATE,dt/DAY)):0;
+  if(tot>0){for(const b of BOTS)if(b.active){const e=dist*b.h/tot;b.earned+=e;b.pending+=e}
+    const me=dist*mine/tot;S.acc+=me*1e8;S.earned+=me}
+  S.paidOut+=dist;
+  const div=S.divToday*dt/DAY;S.divTotal+=div;
+  S.pool+=-dist+div;
+  for(const b of BOTS)if(b.active&&b.earned>=b.spent)b.wear=wearStep(b.wear,dt);
+  if(pastRoi())S.wear=wearStep(S.wear,dt);
+  if(newDay){render();return}
+  const nowOc=oc(); if(nowOc!==wasOc){wasOc=nowOc;render();return}
+  tickText();
 }
 
-const isHidden = o => HIDDEN.includes(o.sellToken.toLowerCase()) || HIDDEN.includes(o.buyToken.toLowerCase());
-
-function orderRow(o) {
-  const st = tokOf(o.sellToken), bt = tokOf(o.buyToken);
-  const sa = units(o.sellAmount, st), ba = units(o.buyAmount, bt);
-  const d = dealPct(o);
-  const thin = [o.sellToken, o.buyToken].some(a => { const p = price[a.toLowerCase()]; return p?.usd && a !== NATIVE && a.toLowerCase() !== USDT.toLowerCase() && (p.liqUsd ?? 0) < THIN_USD; });
-  const comm = !st.core || !bt.core;
-  const dealTxt = d === null ? "no market price"
-    : `<span class="${d >= 0 ? "good" : "bad"}">${d >= 0 ? "+" : ""}${d.toFixed(2)}%</span> vs market`;
-  const isMine = account && o.maker.toLowerCase() === account.toLowerCase();
-  const btn = !o.active ? '<span class="tag">closed</span>'
-    : isMine ? `<button class="danger" onclick="cancelOrder(${o.id})">Cancel</button>`
-    : `<button onclick="fillOrder(${o.id})">Buy</button>`;
-  return `<div class="order">
-    <div class="main">
-      <div class="line1">Get <b>${fmt(sa)} ${st.sym}</b><span class="for">for</span><b>${fmt(ba)} ${bt.sym}</b></div>
-      <div class="line2">${usd(valueUsd(o.buyToken, o.buyAmount))} · ${dealTxt}${thin ? ' · <span class="warnc">thin price</span>' : ""}${comm ? ' · <span class="warnc">community token</span>' : ""} · #${o.id} · ${short(o.maker)}</div>
-    </div>
-    ${btn}
-  </div>`;
-}
-
-function renderOrders() {
-  if (!CONTRACT) return;
-  const fs = $("fSell").value, fb = $("fBuy").value;
-  const list = orders.filter(o => o.active && !isHidden(o) && (!fs || o.sellToken.toLowerCase() === fs) && (!fb || o.buyToken.toLowerCase() === fb))
-    .sort((a, b) => (dealPct(b) ?? -1e9) - (dealPct(a) ?? -1e9));
-  $("ordersInfo").textContent = `${list.length} open order${list.length === 1 ? "" : "s"} · best deals first`;
-  $("ordersList").innerHTML = list.length ? list.map(o => orderRow(o)).join("") : '<span class="muted">No open orders for this filter.</span>';
-}
-
-function renderMine() {
-  if (!account) return;
-  const mine = orders.filter(o => o.maker.toLowerCase() === account.toLowerCase()).reverse();
-  $("mineList").innerHTML = mine.length ? "<h2>My orders</h2>" + mine.map(o => orderRow(o)).join("")
-    : '<span class="muted">You have no orders yet.</span>';
-}
-
-// ===================== WALLET =====================
-async function connect() {
-  if (!window.ethereum) { toast("No wallet found. Open this site in your wallet's browser (MetaMask, Trust Wallet, Rabby…)."); return; }
-  try {
-    const bp = new E.BrowserProvider(window.ethereum, "any");
-    await bp.send("eth_requestAccounts", []);
-    const net = await bp.getNetwork();
-    if (Number(net.chainId) !== CHAIN_ID) {
-      try { await bp.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]); }
-      catch (e) {
-        await bp.send("wallet_addEthereumChain", [{ chainId: "0x38", chainName: "BNB Smart Chain", rpcUrls: [RPC],
-          nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }, blockExplorerUrls: [EXPLORER] }]);
-      }
-    }
-    const bp2 = new E.BrowserProvider(window.ethereum, "any");
-    signer = await bp2.getSigner();
-    account = await signer.getAddress();
-    $("connectBtn").textContent = short(account);
-    window.ethereum.on?.("accountsChanged", () => location.reload());
-    window.ethereum.on?.("chainChanged", () => location.reload());
-    renderOrders(); renderMine(); updateBalance();
-  } catch (e) { console.error(e); toast(errMsg(e)); }
-}
-
-function errMsg(e) {
-  const data = e?.data || e?.info?.error?.data?.data || e?.info?.error?.data || e?.error?.data;
-  if (typeof data === "string" && data.length >= 10) {
-    try { const d = P2P_IFACE.parseError(data); if (d && ERR_TEXT[d.name]) return ERR_TEXT[d.name]; } catch {}
-  }
-  const raw = e?.info?.error?.message || "";
-  for (const k of Object.keys(ERR_TEXT)) if (raw.includes(k + "()")) return ERR_TEXT[k];
-  if (/insufficient funds/i.test(raw + (e?.message || ""))) return "Not enough BNB for this transaction and gas.";
-  const m = e?.shortMessage || e?.info?.error?.message || e?.message || String(e);
-  if (/user rejected|denied/i.test(m)) return "Transaction cancelled.";
-  return m.length > 160 ? m.slice(0, 160) + "…" : m;
-}
-
-async function ensureAllowance(tokenAddr, amount, step) {
-  if (tokenAddr === NATIVE) return;
-  const t = new E.Contract(tokenAddr, ERC20_ABI, signer);
-  const cur = await t.allowance(account, CONTRACT);
-  if (cur >= amount) return;
-  toast((step || "Step 1/2") + ": approve " + tokOf(tokenAddr).sym, 8000);
-  const tx = await t.approve(CONTRACT, amount);
-  await tx.wait();
-}
-
-async function fillOrder(id) {
-  if (!signer) return connect();
-  const o = orders.find(x => x.id === id); if (!o) return;
-  const st = tokOf(o.sellToken), bt = tokOf(o.buyToken);
-  const comm = !st.core || !bt.core ? "\n\n⚠ Community token: not checked by anyone. Verify the contract address." : "";
-  const ok = confirm(`Buy order #${id}\n\nYou pay: ${E.formatUnits(o.buyAmount, bt.dec)} ${bt.sym}\nYou get: ${fmt(units(o.sellAmount, st) * 0.9995)} ${st.sym} (after 0.05% fee)\n\nToken you get: ${st.addr === NATIVE ? "BNB" : st.addr}${comm}\n\nContinue?`);
-  if (!ok) return;
-  try {
-    await ensureAllowance(o.buyToken, o.buyAmount);
-    const c = new E.Contract(CONTRACT, P2P_ABI, signer);
-    const tx = await c.fillOrder(id, { value: o.buyToken === NATIVE ? o.buyAmount : 0n });
-    toast("Waiting for confirmation…", 15000);
-    await tx.wait();
-    toast("Order filled ✔");
-    await loadOrders(); updateBalance();
-  } catch (e) { console.error(e); toast(errMsg(e)); }
-}
-
-async function cancelOrder(id) {
-  if (!signer) return connect();
-  if (!confirm(`Cancel order #${id} and get a full refund?`)) return;
-  try {
-    const tx = await new E.Contract(CONTRACT, P2P_ABI, signer).cancelOrder(id);
-    toast("Waiting for confirmation…", 15000);
-    await tx.wait();
-    toast("Order cancelled, refunded ✔");
-    await loadOrders(); updateBalance();
-  } catch (e) { console.error(e); toast(errMsg(e)); }
-}
-
-// ===================== CREATE =====================
-function parseAmt(str, t) {
-  try { const s = (str || "").replace(",", ".").trim(); if (!s || Number(s) <= 0) return null; return E.parseUnits(s, t.dec); }
-  catch { return null; }
-}
-
-async function balanceOf(addr) {
-  return addr === NATIVE ? await ro.getBalance(account) : await new E.Contract(addr, ERC20_ABI, ro).balanceOf(account);
-}
-
-async function updateBalance() {
-  const t = tokOf($("cSellTok").value || NATIVE);
-  if (!account || !t) { $("cBal").textContent = ""; return; }
-  try {
-    const b = await balanceOf(t.addr);
-    $("cBal").innerHTML = `Balance: <a href="#" id="maxLink">${fmt(units(b, t), 6)} ${t.sym}</a>`;
-    $("maxLink").onclick = ev => { ev.preventDefault(); $("cSellAmt").value = E.formatUnits(b, t.dec); updatePreview(); };
-  } catch { $("cBal").textContent = ""; }
-}
-
-function setFromMarket(pct) {
-  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
-  const sa = parseAmt($("cSellAmt").value, st);
-  const ps = price[st.addr.toLowerCase()]?.usd, pb = price[bt.addr.toLowerCase()]?.usd;
-  if (!sa || !ps || !pb) { toast("Enter the amount you sell first (and both tokens need a market price)."); return; }
-  const want = units(sa, st) * ps / pb * (1 + pct / 100);
-  $("cBuyAmt").value = want.toFixed(Math.min(bt.dec, 8)).replace(/\.?0+$/, "");
-  updatePreview();
-}
-
-function updatePreview() {
-  if (!$("cSellTok").value) return;
-  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
-  const sa = parseAmt($("cSellAmt").value, st), ba = parseAmt($("cBuyAmt").value, bt);
-  const w = $("cWarn"); w.classList.add("hidden");
-  $("cSubmit").disabled = !(sa && ba && st.addr !== bt.addr && CONTRACT);
-  if (st.addr === bt.addr) { $("cPreview").innerHTML = '<span class="bad">Choose two different tokens.</span>'; return; }
-  if (!sa || !ba) { $("cPreview").innerHTML = '<span class="muted">Enter amounts</span>'; return; }
-  const rec = units(ba, bt) * 0.9995;
-  const vs = valueUsd(st.addr, sa), vb = valueUsd(bt.addr, ba);
-  const vsMkt = vs && vb ? (vb / vs - 1) * 100 : null;
-  $("cPreview").innerHTML = `
-    <div><span class="muted">You lock</span><b>${fmt(units(sa, st), 6)} ${st.sym}</b></div>
-    <div><span class="muted">If filled you receive</span><b>${fmt(rec, 6)} ${bt.sym}</b></div>
-    <div><span class="muted">Fee (0.05%)</span><span>${fmt(units(ba, bt) * 0.0005, 6)} ${bt.sym}</span></div>
-    <div><span class="muted">Your price</span><span>1 ${st.sym} = ${fmt(units(ba, bt) / units(sa, st), 6)} ${bt.sym}</span></div>
-    <div><span class="muted">vs market</span><span class="${vsMkt === null ? "muted" : vsMkt >= 0 ? "good" : "bad"}">${vsMkt === null ? "no market price" : (vsMkt >= 0 ? "+" : "") + vsMkt.toFixed(2) + "%"}</span></div>`;
-  if (vsMkt !== null && vsMkt < -5) {
-    w.textContent = `You are selling ${Math.abs(vsMkt).toFixed(1)}% below the market price. Bots may fill this instantly. Double-check the amounts.`;
-    w.classList.remove("hidden");
-  } else if (vsMkt !== null && vsMkt > 50) {
-    w.textContent = `Your price is ${vsMkt.toFixed(0)}% above market. It may never be filled.`;
-    w.classList.remove("hidden");
-  }
-}
-
-async function submitCreate() {
-  if (!signer) return connect();
-  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
-  const sa = parseAmt($("cSellAmt").value, st), ba = parseAmt($("cBuyAmt").value, bt);
-  if (!sa || !ba) return;
-  if (!confirm(`Create order\n\nYou lock: ${E.formatUnits(sa, st.dec)} ${st.sym}\nYou want: ${E.formatUnits(ba, bt.dec)} ${bt.sym}\n\nContinue?`)) return;
-  try {
-    await ensureAllowance(st.addr, sa);
-    const c = new E.Contract(CONTRACT, P2P_ABI, signer);
-    const tx = await c.createOrder(st.addr, sa, bt.addr, ba, { value: st.addr === NATIVE ? sa : 0n });
-    toast("Waiting for confirmation…", 15000);
-    await tx.wait();
-    toast("Order created ✔");
-    $("cSellAmt").value = ""; $("cBuyAmt").value = ""; updatePreview();
-    await loadOrders(); updateBalance(); showTab("mine");
-  } catch (e) { console.error(e); toast(errMsg(e)); }
-}
-
-// ===================== LIST A TOKEN =====================
-let listing = null; // { addr, sym, dec, testAmount }
-
-async function checkListing() {
-  listing = null; $("lSubmit").disabled = true;
-  const info = $("lInfo");
-  const raw = $("lAddr").value.trim();
-  if (!E.isAddress(raw)) { info.innerHTML = '<span class="bad">Not a valid address.</span>'; return; }
-  const addr = E.getAddress(raw);
-  if (!CONTRACT) { info.innerHTML = '<span class="bad">Contract not launched yet.</span>'; return; }
-  info.innerHTML = '<span class="muted">Checking…</span>';
-  try {
-    if (await p2pRead().isAllowedToken(addr)) { info.innerHTML = '<span class="good">This token is already listed.</span>'; return; }
-    if ((await ro.getCode(addr)) === "0x") { info.innerHTML = '<span class="bad">This address is not a contract.</span>'; return; }
-    const ec = new E.Contract(addr, ERC20_ABI, ro);
-    const [sym, name, dec] = await Promise.all([ec.symbol(), ec.name(), ec.decimals()]);
-    const d = Number(dec);
-    let rows = `<div><span class="muted">Token</span><b>${esc(sym)}</b></div><div><span class="muted">Name</span><span>${esc(name)}</span></div>`;
-    let ready = true, testAmount = 0n;
-    if (account) {
-      const bal = await ec.balanceOf(account);
-      const one = 10n ** BigInt(d);
-      testAmount = bal < one ? bal : one;
-      if (testAmount < 10000n) { ready = false; rows += `<div><span class="muted">Test amount</span><span class="bad">You need a small balance of ${esc(sym)} for the tax test.</span></div>`; }
-      else rows += `<div><span class="muted">Test amount (returned)</span><span>${fmt(Number(E.formatUnits(testAmount, d)), 6)} ${esc(sym)}</span></div>`;
-      const cd1Dec = tokOf(CD1).dec;
-      const cdBal = await new E.Contract(CD1, ERC20_ABI, ro).balanceOf(account);
-      const feeTxt = `${E.formatUnits(listingFee, cd1Dec)} CD1`;
-      if (cdBal < listingFee) { ready = false; rows += `<div><span class="muted">Listing fee</span><span class="bad">${feeTxt} needed, you have ${fmt(Number(E.formatUnits(cdBal, cd1Dec)), 4)}</span></div>`; }
-      else rows += `<div><span class="muted">Listing fee</span><span>${feeTxt} → creator</span></div>`;
-    } else { ready = false; rows += '<div><span class="muted">Wallet</span><span>Connect to continue</span></div>'; }
-    info.innerHTML = rows;
-    if (ready) { listing = { addr, sym: esc(sym), dec: d, testAmount }; $("lSubmit").disabled = false; }
-  } catch (e) { console.error(e); info.innerHTML = '<span class="bad">Could not read this token. Is it an ERC-20 / BEP-20 token?</span>'; }
-}
-
-async function submitListing() {
-  if (!signer) return connect();
-  if (!listing) return;
-  if (!confirm(`List ${listing.sym}?\n\nCost: ${E.formatUnits(listingFee, tokOf(CD1).dec)} CD1 (to the creator).\nTax test: a small amount is sent in and returned to you.\nTaxed tokens are rejected and nothing is charged.\n\nListing is permanent. Continue?`)) return;
-  try {
-    const tc = new E.Contract(listing.addr, ERC20_ABI, signer);
-    if ((await tc.allowance(account, CONTRACT)) < listing.testAmount) {
-      toast(`Step 1/3: approve ${listing.sym} (test amount)`, 8000);
-      await (await tc.approve(CONTRACT, listing.testAmount)).wait();
-    }
-    await ensureAllowance(CD1, listingFee, "Step 2/3");
-    toast("Step 3/3: list token", 8000);
-    const tx = await new E.Contract(CONTRACT, P2P_ABI, signer).listToken(listing.addr, listing.testAmount);
-    await tx.wait();
-    toast(`${listing.sym} listed ✔`);
-    $("lAddr").value = ""; $("lInfo").innerHTML = '<span class="good">Listed. It now appears as a community token.</span>';
-    listing = null; $("lSubmit").disabled = true;
-    await loadCommunityTokens(); loadPrices();
-  } catch (e) { console.error(e); toast(errMsg(e), 7000); }
-}
-
-// ===================== UI WIRING =====================
-function showTab(name) {
-  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
-  document.querySelectorAll("main section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + name));
-  window.scrollTo(0, 0);
-}
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
-document.querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); showTab(a.dataset.goto); });
-document.querySelectorAll("[data-pct]").forEach(b => b.onclick = () => setFromMarket(Number(b.dataset.pct)));
-
-function fillSelects() {
-  const opt = t => `<option value="${t.addr.toLowerCase()}">${t.sym} — ${t.name}</option>`;
-  const vis = visibleTokens();
-  const core = vis.filter(t => t.core).map(opt).join("");
-  const comm = vis.filter(t => !t.core).map(opt).join("");
-  const body = `<optgroup label="Core">${core}</optgroup>` + (comm ? `<optgroup label="Community (unverified)">${comm}</optgroup>` : "");
-  for (const [id, any] of [["fSell", true], ["fBuy", true], ["cSellTok", false], ["cBuyTok", false]]) {
-    const el = $(id), keep = el.value;
-    el.innerHTML = (any ? '<option value="">Any token</option>' : "") + body;
-    if (keep) el.value = keep;
-  }
-  if (!$("cBuyTok").value || $("cBuyTok").value === $("cSellTok").value) $("cBuyTok").value = USDT.toLowerCase();
-}
-fillSelects();
-$("cSellTok").value = NATIVE; $("cBuyTok").value = USDT.toLowerCase();
-$("fSell").onchange = renderOrders; $("fBuy").onchange = renderOrders;
-["cSellAmt", "cBuyAmt"].forEach(id => $(id).oninput = updatePreview);
-$("cSellTok").onchange = () => { updatePreview(); updateBalance(); };
-$("cBuyTok").onchange = updatePreview;
-$("cSubmit").onclick = submitCreate;
-$("lCheck").onclick = checkListing;
-$("lSubmit").onclick = submitListing;
-$("connectBtn").onclick = connect;
-$("refreshBtn").onclick = () => { loadOrders(); loadPrices(); };
-
-$("contractInfo").innerHTML = CONTRACT
-  ? `Address: <a href="${EXPLORER}/address/${CONTRACT}" target="_blank" rel="noopener">${CONTRACT}</a> · verified source on BscScan.`
-  : "Not deployed yet.";
-if (!CONTRACT) $("notDeployed").classList.remove("hidden");
-
-(async () => {
-  await pickRpc();
-  await refreshDecimals();
-  await loadCommunityTokens();
-  $("lFeeTxt").textContent = E.formatUnits(listingFee, tokOf(CD1).dec) + " CD1";
-  loadPrices(); loadOrders(); updatePreview();
-})();
-setInterval(loadPrices, 30000);
-setInterval(async () => { await loadCommunityTokens(); loadOrders(); }, 30000);
+function setSpeed(v){S.speed=v;document.querySelectorAll("header .speed button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.speed===v)))}
+document.querySelector(".speed").addEventListener("click",e=>{const b=e.target.closest("button");if(b)setSpeed(+b.dataset.speed)});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b)return;
+  const act=b.dataset.act, r=b.dataset.r!==undefined?+b.dataset.r:undefined, g=b.dataset.g!==undefined?+b.dataset.g:undefined;
+  if(A[act]){A[act](r,g);render();}
+});
+const help=$("help");let lastFocus=null;
+function openHelp(){lastFocus=document.activeElement;help.hidden=false;$("helpClose").focus();try{localStorage.setItem("satminer-help-seen","1")}catch(e){}}
+function closeHelp(){help.hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+$("helpBtn").addEventListener("click",openHelp);
+$("helpClose").addEventListener("click",closeHelp);
+help.addEventListener("click",e=>{if(e.target===help)closeHelp()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!help.hidden)closeHelp()});
+setSpeed(60); render(); setInterval(tick,250);
+try{if(!localStorage.getItem("satminer-help-seen"))openHelp()}catch(e){}
 </script>
+
 </body>
 </html>
