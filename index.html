@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BnbP2P</title>
+<meta name="description" content="Peer-to-peer fixed-price orders on BNB Chain. 0.05% per side, no slippage, no admin.">
+<style>
+:root{
+  --bg:#0b0d12;--panel:#141821;--panel2:#1b2030;--line:#262c3d;
+  --text:#e8ebf2;--muted:#8a93a8;--accent:#7c5cff;--accent2:#00d4a8;
+  --good:#22c58b;--bad:#ff5c6c;--warn:#ffb547;--r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent2)}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;
+  background:var(--accent);color:#fff;font-weight:600}
+button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+button.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select{font:inherit;width:100%;padding:11px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--bg);color:var(--text)}
+header{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
+.logo{font-weight:800;font-size:18px;letter-spacing:.2px}
+.logo span{color:var(--accent2)}
+.pls{color:var(--muted);font-size:13px}
+nav{display:flex;gap:6px;padding:10px 0;overflow-x:auto}
+nav button{background:transparent;color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+nav button.on{background:var(--panel2);color:var(--text);border-color:var(--accent)}
+main{padding:16px 0 60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.banner{border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:14px}
+.banner.warn{background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.4);color:var(--warn)}
+.banner.info{background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.35)}
+.row{display:flex;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.tag.comm{color:var(--warn);border-color:rgba(255,181,71,.5)}
+.tag.thin{color:var(--warn);border-color:rgba(255,181,71,.5)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warnc{color:var(--warn)}
+.tok{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;
+  background:var(--panel2);border:1px solid var(--line)}
+.order{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.order:first-child{border-top:0}
+.order .main{flex:1;min-width:0}
+.order .line1{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.order .line1 b{font-weight:700}
+.order .line1 .for{color:var(--muted);margin:0 4px}
+.order .line2{font-size:12px;color:var(--muted);margin-top:2px}
+.order button{padding:7px 14px;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 6px;border-top:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;border-top:0}
+td.r,th.r{text-align:right}
+.preview{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px}
+.preview div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--panel2);
+  border:1px solid var(--line);padding:12px 16px;border-radius:12px;max-width:92vw;z-index:20;display:none}
+.hidden{display:none!important}
+h2{font-size:17px;margin:0 0 10px}
+h3{font-size:15px;margin:16px 0 6px}
+ul{padding-left:18px;margin:6px 0}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.hide-sm{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <div class="logo">Bnb<span>P2P</span></div>
+      <div class="row">
+        <span class="pls" id="nativePrice">BNB —</span>
+        <button id="connectBtn">Connect</button>
+      </div>
+    </div>
+    <nav>
+      <button data-tab="orders" class="on">Orders</button>
+      <button data-tab="create">Create order</button>
+      <button data-tab="mine">My orders</button>
+      <button data-tab="list">List a token</button>
+      <button data-tab="prices">Prices</button>
+      <button data-tab="about">How it works</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notDeployed" class="banner warn hidden">Contract address not set yet. Prices work; orders will appear after launch.</div>
+  <div class="banner info small">Prices shown are indicative, read from PancakeSwap V2 pools. They are not used by the contract. Always check what you pay and receive. <a href="#" data-goto="about">Details</a></div>
+
+  <!-- ORDERS -->
+  <section id="tab-orders">
+    <div class="card">
+      <div class="grid2">
+        <div><label>They sell</label><select id="fSell"></select></div>
+        <div><label>They want</label><select id="fBuy"></select></div>
+      </div>
+      <div class="row small muted" style="margin-top:10px;justify-content:space-between">
+        <span id="ordersInfo">Loading…</span>
+        <button class="ghost" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+    <div class="card" id="ordersList"></div>
+  </section>
+
+  <!-- CREATE -->
+  <section id="tab-create" class="hidden">
+    <div class="card">
+      <h2>Create order</h2>
+      <p class="small muted">Lock your tokens. Anyone who pays your exact price takes the whole order. Cancel anytime, free.</p>
+      <label>You sell</label>
+      <div class="grid2">
+        <select id="cSellTok"></select>
+        <input id="cSellAmt" inputmode="decimal" placeholder="Amount">
+      </div>
+      <div class="small muted" id="cBal" style="margin-top:6px"></div>
+      <label>You want in return</label>
+      <div class="grid2">
+        <select id="cBuyTok"></select>
+        <input id="cBuyAmt" inputmode="decimal" placeholder="Amount">
+      </div>
+      <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+        <span class="small muted">Set price vs market:</span>
+        <button class="ghost small" data-pct="0">Market</button>
+        <button class="ghost small" data-pct="2">+2%</button>
+        <button class="ghost small" data-pct="5">+5%</button>
+        <button class="ghost small" data-pct="10">+10%</button>
+      </div>
+      <h3>Preview</h3>
+      <div class="preview" id="cPreview"><span class="muted">Enter amounts</span></div>
+      <div id="cWarn" class="banner warn hidden" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="cSubmit" style="flex:1">Create order</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MINE -->
+  <section id="tab-mine" class="hidden">
+    <div class="card" id="mineList"><span class="muted">Connect your wallet to see your orders.</span></div>
+  </section>
+
+  <!-- LIST A TOKEN -->
+  <section id="tab-list" class="hidden">
+    <div class="card">
+      <h2>List a token</h2>
+      <p class="small">Anyone can add a new token. Cost: <b id="lFeeTxt">10 CD1</b>, paid to the creator's wallet. CD1 is the creator's own token.</p>
+      <ul class="small">
+        <li><b>Tokens with a transfer tax cannot be listed.</b> The contract sends a small test amount of your token in and straight back to you. If any of it goes missing, listing is rejected and nothing is charged.</li>
+        <li>You get the full test amount back. You need at least a tiny balance of the token.</li>
+        <li>Listing is permanent and is not an endorsement. Community tokens are marked <span class="tag comm">community</span>.</li>
+      </ul>
+      <label>Token contract address</label>
+      <div class="row">
+        <input id="lAddr" placeholder="0x…" autocomplete="off" spellcheck="false">
+        <button class="ghost" id="lCheck">Check</button>
+      </div>
+      <div class="preview" id="lInfo" style="margin-top:10px"><span class="muted">Paste an address and press Check.</span></div>
+      <div class="row" style="margin-top:14px">
+        <button id="lSubmit" style="flex:1" disabled>List token</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICES -->
+  <section id="tab-prices" class="hidden">
+    <div class="card">
+      <h2>Market prices</h2>
+      <p class="small muted">Read live from PancakeSwap V2 pools (against WBNB or USDT, whichever is deeper). BNB price from the WBNB/USDT pool. Updated every 30 seconds.</p>
+      <table>
+        <thead><tr><th>Token</th><th class="r">USD</th><th class="r hide-sm">Pool liquidity</th></tr></thead>
+        <tbody id="priceTable"></tbody>
+      </table>
+      <p class="small muted" id="priceTime"></p>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="tab-about" class="hidden">
+    <div class="card">
+      <h2>How it works</h2>
+      <ul class="small">
+        <li>A seller locks tokens in the contract and names exactly what they want in return.</li>
+        <li>Anyone can fill the whole order. The seller gets exactly their price. No pools, no slippage.</li>
+        <li>Fee: <b>0.05%</b> from the seller and <b>0.05%</b> from the buyer, each taken from what they receive. No other fees.</li>
+        <li>Sellers can cancel anytime, free, with a full refund. Orders never expire.</li>
+        <li>The contract has <b>no owner and no admin</b>. Nobody, including the creator, can change rules, pause it, or touch funds.</li>
+        <li>Tokens with transfer taxes are rejected, both when listing and when trading.</li>
+      </ul>
+      <h3>Core and community tokens</h3>
+      <p class="small">Core tokens were set when the contract was deployed. Anyone can add more for 10 CD1 (paid to the creator; CD1 is the creator's own token). Community-listed tokens are not checked by anyone. Fake copies of popular tokens are possible. Always check the contract address. This site may hide reported tokens from its lists; the contract keeps working for them.</p>
+      <h3>Binance-Peg tokens</h3>
+      <p class="small">Many tokens on BNB Chain (ETH, XRP, ADA, DOT and others) are "Binance-Peg" versions, issued by Binance and backed by the original coins it holds. They are not the native coins of those chains.</p>
+      <h3>Where prices come from</h3>
+      <p class="small">Prices on this site are read directly from PancakeSwap V2 pools and converted to USD through USDT. They are <b>indicative only</b>. Pools with low liquidity can be moved easily and may show wrong prices; these are marked <span class="tag thin">thin</span>. The contract does not use these prices. Trades happen only at the exact amounts written in each order.</p>
+      <h3>Your responsibility</h3>
+      <p class="small">This is an interface to an immutable smart contract. Before creating or filling an order, check the token addresses, amounts and price yourself. Displayed prices may be delayed or wrong. Transactions on the blockchain are final and cannot be reversed. Use at your own risk. Nothing on this site is financial advice.</p>
+      <h3>Contract</h3>
+      <p class="small" id="contractInfo"></p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+// ===================== CONFIG =====================
+const CONTRACT = "0x16cb1F38EAB1ACe7dF8dF2808e86D04C51b26EaA"; // BnbP2P on BNB Chain
+const RPCS = [
+  "https://bsc-dataseed.bnbchain.org",
+  "https://bsc-dataseed1.defibit.io",
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc.drpc.org",
+  "https://bsc-dataseed1.ninicoin.io",
+];
+let RPC = RPCS[0];
+const CHAIN_ID = 56;
+const EXPLORER = "https://bscscan.com";
+const NATIVE = "0x0000000000000000000000000000000000000000";
+const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+const USDT = "0x55d398326f99059fF775485246999027B3197955";
+const CD1 = "0x96481d0712104758F524157E77A3b0E04B783576";
+const FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"; // PancakeSwap V2
+const THIN_USD = 25000; // pool liquidity under this is flagged "thin"
+const HIDDEN = [];      // community tokens hidden from this site (lowercase addresses)
+
+const TOKENS = [
+  { sym: "BNB", addr: NATIVE, dec: 18, name: "BNB (native)" },
+  { sym: "USDT", addr: "0x55d398326f99059fF775485246999027B3197955", dec: 18, name: "Tether USD (Binance-Peg)" },
+  { sym: "USDC", addr: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", dec: 18, name: "USD Coin (Binance-Peg)" },
+  { sym: "FDUSD", addr: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409", dec: 18, name: "First Digital USD" },
+  { sym: "DAI", addr: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3", dec: 18, name: "Dai (Binance-Peg)" },
+  { sym: "BTCB", addr: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", dec: 18, name: "Bitcoin (Binance-Peg)" },
+  { sym: "ETH", addr: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", dec: 18, name: "Ethereum (Binance-Peg)" },
+  { sym: "XRP", addr: "0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE", dec: 18, name: "XRP (Binance-Peg)" },
+  { sym: "ADA", addr: "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47", dec: 18, name: "Cardano (Binance-Peg)" },
+  { sym: "DOGE", addr: "0xbA2aE424d960c26247Dd6c32edC70B295c744C43", dec: 8, name: "Dogecoin (Binance-Peg)" },
+  { sym: "SOL", addr: "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF", dec: 18, name: "Solana (Binance-Peg)" },
+  { sym: "DOT", addr: "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402", dec: 18, name: "Polkadot (Binance-Peg)" },
+  { sym: "LINK", addr: "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD", dec: 18, name: "Chainlink (Binance-Peg)" },
+  { sym: "LTC", addr: "0x4338665CBB7B2485A8855A139b75D5e34AB0DB94", dec: 18, name: "Litecoin (Binance-Peg)" },
+  { sym: "BCH", addr: "0x8fF795a6F4D97E7887C79beA79aba5cc76444aDf", dec: 18, name: "Bitcoin Cash (Binance-Peg)" },
+  { sym: "ATOM", addr: "0x0Eb3a705fc54725037CC9e008bDede697f62F335", dec: 18, name: "Cosmos (Binance-Peg)" },
+  { sym: "FIL", addr: "0x0D8Ce2A99Bb6e3B7Db580eD848240e4a0F9aE153", dec: 18, name: "Filecoin (Binance-Peg)" },
+  { sym: "TRX", addr: "0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12e3", dec: 6, name: "TRON" },
+  { sym: "UNI", addr: "0xBf5140A22578168FD562DCcF235E5D43A02ce9B1", dec: 18, name: "Uniswap (Binance-Peg)" },
+  { sym: "INJ", addr: "0xa2B726B1145A4773F68593CF171187d8EBe4d495", dec: 18, name: "Injective" },
+  { sym: "CAKE", addr: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", dec: 18, name: "PancakeSwap" },
+  { sym: "TWT", addr: "0x4B0F1812e5Df2A09796481Ff14017e6005508003", dec: 18, name: "Trust Wallet Token" },
+  { sym: "XVS", addr: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63", dec: 18, name: "Venus" },
+  { sym: "SHIB", addr: "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D", dec: 18, name: "Shiba Inu (Binance-Peg)" },
+  { sym: "PEPE", addr: "0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00", dec: 18, name: "Pepe" },
+  { sym: "CD1", addr: "0x96481d0712104758F524157E77A3b0E04B783576", dec: 18, name: "CD1 (creator's token)" },
+];
+TOKENS.forEach(t => t.core = true);
+const byAddr = Object.fromEntries(TOKENS.map(t => [t.addr.toLowerCase(), t]));
+const tokOf = a => byAddr[a.toLowerCase()] || { sym: short(a), addr: a, dec: 18, name: "Unknown token", core: false };
+const visibleTokens = () => TOKENS.filter(t => !HIDDEN.includes(t.addr.toLowerCase()));
+
+const P2P_ABI = [
+  "function createOrder(address,uint256,address,uint256) payable returns (uint256)",
+  "function fillOrder(uint256) payable",
+  "function cancelOrder(uint256)",
+  "function listToken(address,uint256)",
+  "function orderCount() view returns (uint256)",
+  "function getOrders(uint256,uint256) view returns (tuple(address maker,bool active,address sellToken,address buyToken,uint128 sellAmount,uint128 buyAmount)[])",
+  "function allowedTokens() view returns (address[])",
+  "function isAllowedToken(address) view returns (bool)",
+  "function LISTING_FEE() view returns (uint256)",
+  "function FEE_RECIPIENT() view returns (address)",
+  "error TokenNotAllowed()", "error SameToken()", "error AmountTooSmall()", "error AmountTooLarge()",
+  "error BadValue()", "error NotActive()", "error NotMaker()", "error TransferShortfall()", "error NativeTransferFailed()",
+  "error ZeroAddress()", "error AlreadyListed()", "error NotAContract()", "error TaxedToken()",
+];
+const ERR_TEXT = {
+  TokenNotAllowed: "This token is not listed.",
+  SameToken: "Choose two different tokens.",
+  AmountTooSmall: "Amount too small.",
+  AmountTooLarge: "Amount too large.",
+  BadValue: "Wrong BNB amount sent.",
+  NotActive: "This order is already filled or cancelled.",
+  NotMaker: "Only the seller can cancel this order.",
+  TransferShortfall: "Token transfer came in short (taxed token?). Nothing was moved.",
+  NativeTransferFailed: "BNB transfer failed.",
+  ZeroAddress: "Invalid address.",
+  AlreadyListed: "This token is already listed.",
+  NotAContract: "This address is not a token contract.",
+  TaxedToken: "This token has a transfer tax and cannot be listed. Nothing was charged.",
+};
+const P2P_IFACE = new ethers.Interface(P2P_ABI);
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function name() view returns (string)",
+];
+const FACTORY_ABI = ["function getPair(address,address) view returns (address)"];
+const PAIR_ABI = ["function getReserves() view returns (uint112,uint112,uint32)", "function token0() view returns (address)"];
+
+// ===================== STATE =====================
+const E = ethers;
+const makeProvider = url => new E.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: E.Network.from(CHAIN_ID), batchMaxCount: 1 });
+let ro = makeProvider(RPC);
+// Pick the first public RPC that answers (they often limit browsers).
+async function pickRpc() {
+  for (const url of RPCS) {
+    try {
+      const p = makeProvider(url);
+      const n = await Promise.race([p.getBlockNumber(), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 4000))]);
+      if (n > 0) { RPC = url; ro = p; return; }
+    } catch (e) { console.warn("RPC failed", url, e?.message); }
+  }
+}
+// Run async jobs a few at a time so public RPCs don't rate-limit us.
+async function mapLimit(items, limit, fn) {
+  const out = []; let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) { const k = i++; out[k] = await fn(items[k]); }
+  });
+  await Promise.all(workers);
+  return out;
+}
+let signer = null, account = null;
+let orders = [];
+const price = {};            // addrLower -> { usd, liqUsd }
+let bnbUsd = 0;
+let listingFee = 10n * 10n ** 18n;
+const pairCache = {};
+
+const $ = id => document.getElementById(id);
+function short(a) { return a.slice(0, 6) + "…" + a.slice(-4); }
+const fmt = (n, d = 4) => {
+  if (n === null || n === undefined || !isFinite(n)) return "—";
+  if (n === 0) return "0";
+  const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(2) + "B";
+  if (a >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  if (a >= 1) return n.toLocaleString("en-US", { maximumFractionDigits: d });
+  return n.toPrecision(4);
+};
+const usd = n => (n === null || !isFinite(n)) ? "—" : "$" + fmt(n, 2);
+const units = (amt, t) => Number(E.formatUnits(amt, t.dec));
+const toast = (msg, ms = 4000) => { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms); };
+const tokBadge = t => `<span class="tok"><span class="dot">${t.sym[0]}</span>${t.sym}</span>`;
+const commTag = t => t.core ? "" : ' <span class="tag comm">community</span>';
+const valueUsd = (addr, amtBig) => { const t = tokOf(addr), p = price[addr.toLowerCase()]; return p && p.usd ? units(amtBig, t) * p.usd : null; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ===================== TOKENS =====================
+async function refreshDecimals() {
+  await mapLimit(TOKENS.filter(t => t.addr !== NATIVE), 4, async t => {
+    try { t.dec = Number(await new E.Contract(t.addr, ERC20_ABI, ro).decimals()); } catch {}
+  });
+}
+
+async function loadCommunityTokens() {
+  if (!CONTRACT) return;
+  try {
+    const c = p2pRead();
+    const list = await c.allowedTokens();
+    try { listingFee = await c.LISTING_FEE(); } catch {}
+    const fresh = list.filter(a => !byAddr[a.toLowerCase()]);
+    await mapLimit(fresh, 3, async a => {
+      const ec = new E.Contract(a, ERC20_ABI, ro);
+      let sym = short(a), name = "Community token", dec = 18;
+      try { sym = (await ec.symbol()).slice(0, 12); } catch {}
+      try { name = (await ec.name()).slice(0, 40); } catch {}
+      try { dec = Number(await ec.decimals()); } catch {}
+      const t = { sym: esc(sym), addr: a, dec, name: esc(name), core: false };
+      TOKENS.push(t); byAddr[a.toLowerCase()] = t;
+    });
+    if (fresh.length) fillSelects();
+  } catch (e) { console.error(e); }
+}
+
+// ===================== PRICES =====================
+async function readPair(a, b) {
+  const key = (a + b).toLowerCase();
+  let pair = pairCache[key];
+  if (pair === undefined) {
+    try { pair = await new E.Contract(FACTORY, FACTORY_ABI, ro).getPair(a, b); } catch { pair = E.ZeroAddress; }
+    pairCache[key] = pair;
+  }
+  if (!pair || pair === E.ZeroAddress) return null;
+  const pc = new E.Contract(pair, PAIR_ABI, ro);
+  const [[r0, r1], t0] = await Promise.all([pc.getReserves(), pc.token0()]);
+  const aIs0 = t0.toLowerCase() === a.toLowerCase();
+  return { ra: aIs0 ? r0 : r1, rb: aIs0 ? r1 : r0 };
+}
+
+async function priceToken(t) {
+  // returns { usd, liqUsd } using the deeper of token/WBNB and token/USDT
+  const dec = t.dec;
+  const out = [];
+  try {
+    const p = await readPair(t.addr, WBNB);
+    if (p && p.ra > 0n) {
+      const ta = Number(E.formatUnits(p.ra, dec)), tb = Number(E.formatUnits(p.rb, 18));
+      out.push({ usd: tb / ta * bnbUsd, liqUsd: 2 * tb * bnbUsd });
+    }
+  } catch (e) { console.warn("price", t.sym, e?.message); }
+  try {
+    const p = await readPair(t.addr, USDT);
+    if (p && p.ra > 0n) {
+      const ta = Number(E.formatUnits(p.ra, dec)), tb = Number(E.formatUnits(p.rb, 18));
+      out.push({ usd: tb / ta, liqUsd: 2 * tb });
+    }
+  } catch (e) { console.warn("price", t.sym, e?.message); }
+  out.sort((x, y) => y.liqUsd - x.liqUsd);
+  return out[0] || { usd: null, liqUsd: 0 };
+}
+
+async function loadPrices() {
+  try {
+    const p = await readPair(WBNB, USDT);
+    if (!p) throw new Error("WBNB/USDT pool not readable");
+    bnbUsd = Number(E.formatUnits(p.rb, 18)) / Number(E.formatUnits(p.ra, 18));
+    price[NATIVE] = { usd: bnbUsd, liqUsd: Infinity };
+    price[USDT.toLowerCase()] = { usd: 1, liqUsd: Infinity };
+    await mapLimit(TOKENS.filter(t => t.addr !== NATIVE && t.addr.toLowerCase() !== USDT.toLowerCase()), 4,
+      async t => { price[t.addr.toLowerCase()] = await priceToken(t); });
+    $("nativePrice").textContent = "BNB " + (bnbUsd ? "$" + fmt(bnbUsd, 2) : "—");
+    renderPrices(); renderOrders(); renderMine(); updatePreview();
+  } catch (e) {
+    console.error(e);
+    $("priceTime").textContent = "Price source unreachable (" + (e?.shortMessage || e?.message || e) + "). Orders still work; prices are only for display.";
+  }
+}
+
+function renderPrices() {
+  $("priceTable").innerHTML = visibleTokens().map(t => {
+    const p = price[t.addr.toLowerCase()] || {};
+    const thin = p.usd && t.addr !== NATIVE && t.addr.toLowerCase() !== USDT.toLowerCase() && (p.liqUsd ?? 0) < THIN_USD;
+    return `<tr>
+      <td>${tokBadge(t)}${commTag(t)} ${thin ? '<span class="tag thin">thin</span>' : ""}<div class="small muted">${t.name}</div></td>
+      <td class="r">${p.usd ? "$" + fmt(p.usd, 6) : "—"}</td>
+      <td class="r hide-sm">${p.liqUsd === Infinity ? "—" : usd(p.liqUsd)}</td></tr>`;
+  }).join("");
+  $("priceTime").textContent = "Last update: " + new Date().toLocaleTimeString();
+}
+
+// ===================== ORDERS =====================
+function p2pRead() { return new E.Contract(CONTRACT, P2P_ABI, ro); }
+
+async function loadOrders() {
+  if (!CONTRACT) { $("ordersInfo").textContent = "Not launched yet"; $("ordersList").innerHTML = '<span class="muted">No orders yet.</span>'; return; }
+  try {
+    const c = p2pRead();
+    const n = Number(await c.orderCount());
+    const PAGE = 200, all = [];
+    for (let s = 0; s < n; s += PAGE) {
+      const res = await c.getOrders(s, PAGE);
+      res.forEach((o, i) => all.push({ id: s + i, maker: o.maker, active: o.active, sellToken: o.sellToken, buyToken: o.buyToken, sellAmount: o.sellAmount, buyAmount: o.buyAmount }));
+    }
+    orders = all;
+    renderOrders(); renderMine();
+  } catch (e) { console.error(e); $("ordersInfo").textContent = "Could not load orders"; }
+}
+
+function dealPct(o) {
+  const get = valueUsd(o.sellToken, o.sellAmount), pay = valueUsd(o.buyToken, o.buyAmount);
+  if (!get || !pay) return null;
+  return (get * 0.9995 / pay - 1) * 100;
+}
+
+const isHidden = o => HIDDEN.includes(o.sellToken.toLowerCase()) || HIDDEN.includes(o.buyToken.toLowerCase());
+
+function orderRow(o) {
+  const st = tokOf(o.sellToken), bt = tokOf(o.buyToken);
+  const sa = units(o.sellAmount, st), ba = units(o.buyAmount, bt);
+  const d = dealPct(o);
+  const thin = [o.sellToken, o.buyToken].some(a => { const p = price[a.toLowerCase()]; return p?.usd && a !== NATIVE && a.toLowerCase() !== USDT.toLowerCase() && (p.liqUsd ?? 0) < THIN_USD; });
+  const comm = !st.core || !bt.core;
+  const dealTxt = d === null ? "no market price"
+    : `<span class="${d >= 0 ? "good" : "bad"}">${d >= 0 ? "+" : ""}${d.toFixed(2)}%</span> vs market`;
+  const isMine = account && o.maker.toLowerCase() === account.toLowerCase();
+  const btn = !o.active ? '<span class="tag">closed</span>'
+    : isMine ? `<button class="danger" onclick="cancelOrder(${o.id})">Cancel</button>`
+    : `<button onclick="fillOrder(${o.id})">Buy</button>`;
+  return `<div class="order">
+    <div class="main">
+      <div class="line1">Get <b>${fmt(sa)} ${st.sym}</b><span class="for">for</span><b>${fmt(ba)} ${bt.sym}</b></div>
+      <div class="line2">${usd(valueUsd(o.buyToken, o.buyAmount))} · ${dealTxt}${thin ? ' · <span class="warnc">thin price</span>' : ""}${comm ? ' · <span class="warnc">community token</span>' : ""} · #${o.id} · ${short(o.maker)}</div>
+    </div>
+    ${btn}
+  </div>`;
+}
+
+function renderOrders() {
+  if (!CONTRACT) return;
+  const fs = $("fSell").value, fb = $("fBuy").value;
+  const list = orders.filter(o => o.active && !isHidden(o) && (!fs || o.sellToken.toLowerCase() === fs) && (!fb || o.buyToken.toLowerCase() === fb))
+    .sort((a, b) => (dealPct(b) ?? -1e9) - (dealPct(a) ?? -1e9));
+  $("ordersInfo").textContent = `${list.length} open order${list.length === 1 ? "" : "s"} · best deals first`;
+  $("ordersList").innerHTML = list.length ? list.map(o => orderRow(o)).join("") : '<span class="muted">No open orders for this filter.</span>';
+}
+
+function renderMine() {
+  if (!account) return;
+  const mine = orders.filter(o => o.maker.toLowerCase() === account.toLowerCase()).reverse();
+  $("mineList").innerHTML = mine.length ? "<h2>My orders</h2>" + mine.map(o => orderRow(o)).join("")
+    : '<span class="muted">You have no orders yet.</span>';
+}
+
+// ===================== WALLET =====================
+async function connect() {
+  if (!window.ethereum) { toast("No wallet found. Open this site in your wallet's browser (MetaMask, Trust Wallet, Rabby…)."); return; }
+  try {
+    const bp = new E.BrowserProvider(window.ethereum, "any");
+    await bp.send("eth_requestAccounts", []);
+    const net = await bp.getNetwork();
+    if (Number(net.chainId) !== CHAIN_ID) {
+      try { await bp.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]); }
+      catch (e) {
+        await bp.send("wallet_addEthereumChain", [{ chainId: "0x38", chainName: "BNB Smart Chain", rpcUrls: [RPC],
+          nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }, blockExplorerUrls: [EXPLORER] }]);
+      }
+    }
+    const bp2 = new E.BrowserProvider(window.ethereum, "any");
+    signer = await bp2.getSigner();
+    account = await signer.getAddress();
+    $("connectBtn").textContent = short(account);
+    window.ethereum.on?.("accountsChanged", () => location.reload());
+    window.ethereum.on?.("chainChanged", () => location.reload());
+    renderOrders(); renderMine(); updateBalance();
+  } catch (e) { console.error(e); toast(errMsg(e)); }
+}
+
+function errMsg(e) {
+  const data = e?.data || e?.info?.error?.data?.data || e?.info?.error?.data || e?.error?.data;
+  if (typeof data === "string" && data.length >= 10) {
+    try { const d = P2P_IFACE.parseError(data); if (d && ERR_TEXT[d.name]) return ERR_TEXT[d.name]; } catch {}
+  }
+  const raw = e?.info?.error?.message || "";
+  for (const k of Object.keys(ERR_TEXT)) if (raw.includes(k + "()")) return ERR_TEXT[k];
+  if (/insufficient funds/i.test(raw + (e?.message || ""))) return "Not enough BNB for this transaction and gas.";
+  const m = e?.shortMessage || e?.info?.error?.message || e?.message || String(e);
+  if (/user rejected|denied/i.test(m)) return "Transaction cancelled.";
+  return m.length > 160 ? m.slice(0, 160) + "…" : m;
+}
+
+async function ensureAllowance(tokenAddr, amount, step) {
+  if (tokenAddr === NATIVE) return;
+  const t = new E.Contract(tokenAddr, ERC20_ABI, signer);
+  const cur = await t.allowance(account, CONTRACT);
+  if (cur >= amount) return;
+  toast((step || "Step 1/2") + ": approve " + tokOf(tokenAddr).sym, 8000);
+  const tx = await t.approve(CONTRACT, amount);
+  await tx.wait();
+}
+
+async function fillOrder(id) {
+  if (!signer) return connect();
+  const o = orders.find(x => x.id === id); if (!o) return;
+  const st = tokOf(o.sellToken), bt = tokOf(o.buyToken);
+  const comm = !st.core || !bt.core ? "\n\n⚠ Community token: not checked by anyone. Verify the contract address." : "";
+  const ok = confirm(`Buy order #${id}\n\nYou pay: ${E.formatUnits(o.buyAmount, bt.dec)} ${bt.sym}\nYou get: ${fmt(units(o.sellAmount, st) * 0.9995)} ${st.sym} (after 0.05% fee)\n\nToken you get: ${st.addr === NATIVE ? "BNB" : st.addr}${comm}\n\nContinue?`);
+  if (!ok) return;
+  try {
+    await ensureAllowance(o.buyToken, o.buyAmount);
+    const c = new E.Contract(CONTRACT, P2P_ABI, signer);
+    const tx = await c.fillOrder(id, { value: o.buyToken === NATIVE ? o.buyAmount : 0n });
+    toast("Waiting for confirmation…", 15000);
+    await tx.wait();
+    toast("Order filled ✔");
+    await loadOrders(); updateBalance();
+  } catch (e) { console.error(e); toast(errMsg(e)); }
+}
+
+async function cancelOrder(id) {
+  if (!signer) return connect();
+  if (!confirm(`Cancel order #${id} and get a full refund?`)) return;
+  try {
+    const tx = await new E.Contract(CONTRACT, P2P_ABI, signer).cancelOrder(id);
+    toast("Waiting for confirmation…", 15000);
+    await tx.wait();
+    toast("Order cancelled, refunded ✔");
+    await loadOrders(); updateBalance();
+  } catch (e) { console.error(e); toast(errMsg(e)); }
+}
+
+// ===================== CREATE =====================
+function parseAmt(str, t) {
+  try { const s = (str || "").replace(",", ".").trim(); if (!s || Number(s) <= 0) return null; return E.parseUnits(s, t.dec); }
+  catch { return null; }
+}
+
+async function balanceOf(addr) {
+  return addr === NATIVE ? await ro.getBalance(account) : await new E.Contract(addr, ERC20_ABI, ro).balanceOf(account);
+}
+
+async function updateBalance() {
+  const t = tokOf($("cSellTok").value || NATIVE);
+  if (!account || !t) { $("cBal").textContent = ""; return; }
+  try {
+    const b = await balanceOf(t.addr);
+    $("cBal").innerHTML = `Balance: <a href="#" id="maxLink">${fmt(units(b, t), 6)} ${t.sym}</a>`;
+    $("maxLink").onclick = ev => { ev.preventDefault(); $("cSellAmt").value = E.formatUnits(b, t.dec); updatePreview(); };
+  } catch { $("cBal").textContent = ""; }
+}
+
+function setFromMarket(pct) {
+  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
+  const sa = parseAmt($("cSellAmt").value, st);
+  const ps = price[st.addr.toLowerCase()]?.usd, pb = price[bt.addr.toLowerCase()]?.usd;
+  if (!sa || !ps || !pb) { toast("Enter the amount you sell first (and both tokens need a market price)."); return; }
+  const want = units(sa, st) * ps / pb * (1 + pct / 100);
+  $("cBuyAmt").value = want.toFixed(Math.min(bt.dec, 8)).replace(/\.?0+$/, "");
+  updatePreview();
+}
+
+function updatePreview() {
+  if (!$("cSellTok").value) return;
+  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
+  const sa = parseAmt($("cSellAmt").value, st), ba = parseAmt($("cBuyAmt").value, bt);
+  const w = $("cWarn"); w.classList.add("hidden");
+  $("cSubmit").disabled = !(sa && ba && st.addr !== bt.addr && CONTRACT);
+  if (st.addr === bt.addr) { $("cPreview").innerHTML = '<span class="bad">Choose two different tokens.</span>'; return; }
+  if (!sa || !ba) { $("cPreview").innerHTML = '<span class="muted">Enter amounts</span>'; return; }
+  const rec = units(ba, bt) * 0.9995;
+  const vs = valueUsd(st.addr, sa), vb = valueUsd(bt.addr, ba);
+  const vsMkt = vs && vb ? (vb / vs - 1) * 100 : null;
+  $("cPreview").innerHTML = `
+    <div><span class="muted">You lock</span><b>${fmt(units(sa, st), 6)} ${st.sym}</b></div>
+    <div><span class="muted">If filled you receive</span><b>${fmt(rec, 6)} ${bt.sym}</b></div>
+    <div><span class="muted">Fee (0.05%)</span><span>${fmt(units(ba, bt) * 0.0005, 6)} ${bt.sym}</span></div>
+    <div><span class="muted">Your price</span><span>1 ${st.sym} = ${fmt(units(ba, bt) / units(sa, st), 6)} ${bt.sym}</span></div>
+    <div><span class="muted">vs market</span><span class="${vsMkt === null ? "muted" : vsMkt >= 0 ? "good" : "bad"}">${vsMkt === null ? "no market price" : (vsMkt >= 0 ? "+" : "") + vsMkt.toFixed(2) + "%"}</span></div>`;
+  if (vsMkt !== null && vsMkt < -5) {
+    w.textContent = `You are selling ${Math.abs(vsMkt).toFixed(1)}% below the market price. Bots may fill this instantly. Double-check the amounts.`;
+    w.classList.remove("hidden");
+  } else if (vsMkt !== null && vsMkt > 50) {
+    w.textContent = `Your price is ${vsMkt.toFixed(0)}% above market. It may never be filled.`;
+    w.classList.remove("hidden");
+  }
+}
+
+async function submitCreate() {
+  if (!signer) return connect();
+  const st = tokOf($("cSellTok").value), bt = tokOf($("cBuyTok").value);
+  const sa = parseAmt($("cSellAmt").value, st), ba = parseAmt($("cBuyAmt").value, bt);
+  if (!sa || !ba) return;
+  if (!confirm(`Create order\n\nYou lock: ${E.formatUnits(sa, st.dec)} ${st.sym}\nYou want: ${E.formatUnits(ba, bt.dec)} ${bt.sym}\n\nContinue?`)) return;
+  try {
+    await ensureAllowance(st.addr, sa);
+    const c = new E.Contract(CONTRACT, P2P_ABI, signer);
+    const tx = await c.createOrder(st.addr, sa, bt.addr, ba, { value: st.addr === NATIVE ? sa : 0n });
+    toast("Waiting for confirmation…", 15000);
+    await tx.wait();
+    toast("Order created ✔");
+    $("cSellAmt").value = ""; $("cBuyAmt").value = ""; updatePreview();
+    await loadOrders(); updateBalance(); showTab("mine");
+  } catch (e) { console.error(e); toast(errMsg(e)); }
+}
+
+// ===================== LIST A TOKEN =====================
+let listing = null; // { addr, sym, dec, testAmount }
+
+async function checkListing() {
+  listing = null; $("lSubmit").disabled = true;
+  const info = $("lInfo");
+  const raw = $("lAddr").value.trim();
+  if (!E.isAddress(raw)) { info.innerHTML = '<span class="bad">Not a valid address.</span>'; return; }
+  const addr = E.getAddress(raw);
+  if (!CONTRACT) { info.innerHTML = '<span class="bad">Contract not launched yet.</span>'; return; }
+  info.innerHTML = '<span class="muted">Checking…</span>';
+  try {
+    if (await p2pRead().isAllowedToken(addr)) { info.innerHTML = '<span class="good">This token is already listed.</span>'; return; }
+    if ((await ro.getCode(addr)) === "0x") { info.innerHTML = '<span class="bad">This address is not a contract.</span>'; return; }
+    const ec = new E.Contract(addr, ERC20_ABI, ro);
+    const [sym, name, dec] = await Promise.all([ec.symbol(), ec.name(), ec.decimals()]);
+    const d = Number(dec);
+    let rows = `<div><span class="muted">Token</span><b>${esc(sym)}</b></div><div><span class="muted">Name</span><span>${esc(name)}</span></div>`;
+    let ready = true, testAmount = 0n;
+    if (account) {
+      const bal = await ec.balanceOf(account);
+      const one = 10n ** BigInt(d);
+      testAmount = bal < one ? bal : one;
+      if (testAmount < 10000n) { ready = false; rows += `<div><span class="muted">Test amount</span><span class="bad">You need a small balance of ${esc(sym)} for the tax test.</span></div>`; }
+      else rows += `<div><span class="muted">Test amount (returned)</span><span>${fmt(Number(E.formatUnits(testAmount, d)), 6)} ${esc(sym)}</span></div>`;
+      const cd1Dec = tokOf(CD1).dec;
+      const cdBal = await new E.Contract(CD1, ERC20_ABI, ro).balanceOf(account);
+      const feeTxt = `${E.formatUnits(listingFee, cd1Dec)} CD1`;
+      if (cdBal < listingFee) { ready = false; rows += `<div><span class="muted">Listing fee</span><span class="bad">${feeTxt} needed, you have ${fmt(Number(E.formatUnits(cdBal, cd1Dec)), 4)}</span></div>`; }
+      else rows += `<div><span class="muted">Listing fee</span><span>${feeTxt} → creator</span></div>`;
+    } else { ready = false; rows += '<div><span class="muted">Wallet</span><span>Connect to continue</span></div>'; }
+    info.innerHTML = rows;
+    if (ready) { listing = { addr, sym: esc(sym), dec: d, testAmount }; $("lSubmit").disabled = false; }
+  } catch (e) { console.error(e); info.innerHTML = '<span class="bad">Could not read this token. Is it an ERC-20 / BEP-20 token?</span>'; }
+}
+
+async function submitListing() {
+  if (!signer) return connect();
+  if (!listing) return;
+  if (!confirm(`List ${listing.sym}?\n\nCost: ${E.formatUnits(listingFee, tokOf(CD1).dec)} CD1 (to the creator).\nTax test: a small amount is sent in and returned to you.\nTaxed tokens are rejected and nothing is charged.\n\nListing is permanent. Continue?`)) return;
+  try {
+    const tc = new E.Contract(listing.addr, ERC20_ABI, signer);
+    if ((await tc.allowance(account, CONTRACT)) < listing.testAmount) {
+      toast(`Step 1/3: approve ${listing.sym} (test amount)`, 8000);
+      await (await tc.approve(CONTRACT, listing.testAmount)).wait();
+    }
+    await ensureAllowance(CD1, listingFee, "Step 2/3");
+    toast("Step 3/3: list token", 8000);
+    const tx = await new E.Contract(CONTRACT, P2P_ABI, signer).listToken(listing.addr, listing.testAmount);
+    await tx.wait();
+    toast(`${listing.sym} listed ✔`);
+    $("lAddr").value = ""; $("lInfo").innerHTML = '<span class="good">Listed. It now appears as a community token.</span>';
+    listing = null; $("lSubmit").disabled = true;
+    await loadCommunityTokens(); loadPrices();
+  } catch (e) { console.error(e); toast(errMsg(e), 7000); }
+}
+
+// ===================== UI WIRING =====================
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("main section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + name));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("[data-goto]").forEach(a => a.onclick = ev => { ev.preventDefault(); showTab(a.dataset.goto); });
+document.querySelectorAll("[data-pct]").forEach(b => b.onclick = () => setFromMarket(Number(b.dataset.pct)));
+
+function fillSelects() {
+  const opt = t => `<option value="${t.addr.toLowerCase()}">${t.sym} — ${t.name}</option>`;
+  const vis = visibleTokens();
+  const core = vis.filter(t => t.core).map(opt).join("");
+  const comm = vis.filter(t => !t.core).map(opt).join("");
+  const body = `<optgroup label="Core">${core}</optgroup>` + (comm ? `<optgroup label="Community (unverified)">${comm}</optgroup>` : "");
+  for (const [id, any] of [["fSell", true], ["fBuy", true], ["cSellTok", false], ["cBuyTok", false]]) {
+    const el = $(id), keep = el.value;
+    el.innerHTML = (any ? '<option value="">Any token</option>' : "") + body;
+    if (keep) el.value = keep;
+  }
+  if (!$("cBuyTok").value || $("cBuyTok").value === $("cSellTok").value) $("cBuyTok").value = USDT.toLowerCase();
+}
+fillSelects();
+$("cSellTok").value = NATIVE; $("cBuyTok").value = USDT.toLowerCase();
+$("fSell").onchange = renderOrders; $("fBuy").onchange = renderOrders;
+["cSellAmt", "cBuyAmt"].forEach(id => $(id).oninput = updatePreview);
+$("cSellTok").onchange = () => { updatePreview(); updateBalance(); };
+$("cBuyTok").onchange = updatePreview;
+$("cSubmit").onclick = submitCreate;
+$("lCheck").onclick = checkListing;
+$("lSubmit").onclick = submitListing;
+$("connectBtn").onclick = connect;
+$("refreshBtn").onclick = () => { loadOrders(); loadPrices(); };
+
+$("contractInfo").innerHTML = CONTRACT
+  ? `Address: <a href="${EXPLORER}/address/${CONTRACT}" target="_blank" rel="noopener">${CONTRACT}</a> · verified source on BscScan.`
+  : "Not deployed yet.";
+if (!CONTRACT) $("notDeployed").classList.remove("hidden");
+
+(async () => {
+  await pickRpc();
+  await refreshDecimals();
+  await loadCommunityTokens();
+  $("lFeeTxt").textContent = E.formatUnits(listingFee, tokOf(CD1).dec) + " CD1";
+  loadPrices(); loadOrders(); updatePreview();
+})();
+setInterval(loadPrices, 30000);
+setInterval(async () => { await loadCommunityTokens(); loadOrders(); }, 30000);
+</script>
+</body>
+</html>
